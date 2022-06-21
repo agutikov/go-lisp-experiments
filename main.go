@@ -20,6 +20,7 @@ type Str string
 type Float float64
 
 type Symbol string
+type Builtin string
 type Any interface{}
 type List []Any
 
@@ -51,6 +52,44 @@ func to_function(s Any) PureFunction {
 	default:
 		fmt.Println(reflect.TypeOf(v))
 		panic("Invalid function, ")
+	}
+}
+
+func lispstr(expr Any) string {
+	if expr == nil {
+		return "nil"
+	}
+	switch v := expr.(type) {
+	case Builtin:
+		return string(v)
+	case Symbol:
+		return string(v)
+	case Int:
+		return fmt.Sprintf("%d", v)
+	case Float:
+		return fmt.Sprintf("%f", v)
+	case Str:
+		return "\"" + string(v) + "\""
+	case Bool:
+		if v {
+			return "t"
+		} else {
+			return "f"
+		}
+	case List:
+		s := "("
+		for i, item := range v {
+			s += lispstr(item)
+			if i != 0 {
+				s += " "
+			}
+		}
+		s += ")"
+		return s
+	case PureFunction:
+		return fmt.Sprintf("function{%p}", v)
+	default:
+		return "Unknown"
 	}
 }
 
@@ -96,25 +135,6 @@ func (env *Env) env_lookup(s Symbol) *Env {
 	}
 }
 
-func (env *Env) eval_args(args List) List {
-	r := make(List, 0)
-	for _, elem := range args {
-		r = append(r, env.eval(elem))
-	}
-	return r
-}
-
-func (env *Env) eval_function(f PureFunction, args List) Any {
-	a := env.eval_args(args)
-	return f(a)
-}
-
-func (env *Env) eval_env_symbol(f_name Symbol, args List) Any {
-	f_value := env.eval(f_name)
-	f := to_function(f_value)
-	return env.eval_function(f, args)
-}
-
 func if_test(value Any) bool {
 	//TODO: not sure about conversion of other types to bool
 	// maybe everything except nil and false is true
@@ -133,19 +153,18 @@ func if_test(value Any) bool {
 	case Float:
 		return float64(v) != 0.0
 	default:
-		return true
+		panic("Non-data if test argument")
 	}
 }
 
-func (env *Env) eval_if(args List) Any {
+func (env *Env) eval_if(expr List) Any {
 	//TODO: verify number of args on parsing stage
-	if len(args) != 3 {
-		// TODO: print args list
-		panic("'if' statement requires exactly 3 arguments (if test conseq alt), while provided: ")
+	if len(expr) != 4 {
+		panic("'if' statement requires exactly 3 arguments (if test conseq alt), while provided: " + lispstr(expr))
 	}
-	test := args[0]
-	conseq := args[1]
-	alt := args[2]
+	test := expr[1]
+	conseq := expr[2]
+	alt := expr[3]
 
 	v := env.eval(test)
 
@@ -156,14 +175,13 @@ func (env *Env) eval_if(args List) Any {
 	}
 }
 
-func (env *Env) eval_define(args List) Any {
+func (env *Env) eval_define(expr List) Any {
 	//TODO: verify number of args on parsing stage
-	if len(args) != 2 {
-		// TODO: print args list
-		panic("'define' statement requires exactly 2 arguments (define name exp), while provided: ")
+	if len(expr) != 3 {
+		panic("'define' statement requires exactly 2 arguments (define name exp), while provided: " + lispstr(expr))
 	}
-	name := args[0]
-	exp := args[1]
+	name := expr[1]
+	exp := expr[2]
 
 	value := env.eval(exp)
 
@@ -177,14 +195,13 @@ func (env *Env) eval_define(args List) Any {
 	return nil
 }
 
-func (env *Env) eval_set(args List) Any {
+func (env *Env) eval_set(expr List) Any {
 	//TODO: verify number of args on parsing stage
-	if len(args) != 2 {
-		// TODO: print args list
-		panic("'set!' statement requires exactly 2 arguments (set! name exp), while provided: ")
+	if len(expr) != 3 {
+		panic("'set!' statement requires exactly 2 arguments (set! name exp), while provided: " + lispstr(expr))
 	}
-	name := args[0]
-	exp := args[1]
+	name := expr[1]
+	exp := expr[2]
 
 	value := env.eval(exp)
 
@@ -210,14 +227,13 @@ func lambda_args(vars Any) []Symbol {
 	return a
 }
 
-func (env *Env) eval_lambda(args List) PureFunction {
+func (env *Env) eval_lambda(expr List) Any {
 	//TODO: verify number of args on parsing stage
-	if len(args) != 2 {
-		// TODO: print args list
-		panic("'lambda' statement requires exactly 2 arguments (lambda (vars...) body), while provided: ")
+	if len(expr) != 3 {
+		panic("'lambda' statement requires exactly 2 arguments (lambda (vars...) body), while provided: " + lispstr(expr))
 	}
-	p := args[0]
-	body := args[1]
+	p := expr[1]
+	body := expr[2]
 
 	params := lambda_args(p)
 
@@ -230,31 +246,48 @@ func (env *Env) eval_lambda(args List) PureFunction {
 	}
 }
 
-func (env *Env) eval_quote(args List) Any {
-	if len(args) != 1 {
-		panic("'quote' statement requires exactly 1 argument (quote exp), while provided: ")
+func (env *Env) eval_quote(expr List) Any {
+	if len(expr) != 2 {
+		panic("'quote' statement requires exactly 1 argument (quote exp), while provided: " + lispstr(expr))
 	}
-	return args[1]
+	return expr[1:]
 }
 
-func (env *Env) eval_symbol(s Symbol, args List) Any {
+func (env *Env) eval_builtin(s Builtin, expr List) Any {
 	switch s { //TODO: is there any benefit of using map[Symbol]EnvFunction ?
 	case "quote":
 		//TODO: unquote????
-		return env.eval_quote(args)
+		return env.eval_quote(expr)
 	case "if":
-		return env.eval_if(args)
+		return env.eval_if(expr)
 	case "define":
 		//TODO: what define should return ?
-		return env.eval_define(args)
+		return env.eval_define(expr)
 	case "set!":
 		//TODO: what set! should return ?
-		return env.eval_set(args)
+		return env.eval_set(expr)
 	case "lambda":
-		return env.eval_lambda(args)
+		return env.eval_lambda(expr)
 	default:
-		return env.eval_env_symbol(s, args)
+		panic("Unknown builtin")
 	}
+}
+
+func (env *Env) eval_args(args List) List {
+	r := make(List, 0)
+	for _, elem := range args {
+		r = append(r, env.eval(elem))
+	}
+	return r
+}
+
+func (env *Env) eval_expr(expr List) Any {
+	head := expr[0]
+	tail := expr[1:]
+	f_value := env.eval(head)
+	f := to_function(f_value)
+	args := env.eval_args(tail)
+	return f(args)
 }
 
 func (env *Env) eval_list(expr List) Any {
@@ -262,23 +295,12 @@ func (env *Env) eval_list(expr List) Any {
 		return expr
 	}
 	head := expr[0]
-	tail := expr[1:]
 
 	switch s := head.(type) {
-	case Symbol:
-		return env.eval_symbol(s, tail)
-	case List:
-		//TODO: List head ?
-		v := env.eval_list(s)
-		var e List
-		e = append(List{v}, tail...)
-		return env.eval_list(e)
-	case PureFunction:
-		// Head is lambda itself
-		return env.eval_function(s, tail)
+	case Builtin:
+		return env.eval_builtin(s, expr)
 	default:
-		//TODO: print Any
-		panic("Invalid list expression: ")
+		return env.eval_expr(expr)
 	}
 }
 
