@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"fmt"
+	"math"
 	"os"
 	"reflect"
 	"strconv"
@@ -27,7 +28,7 @@ func to_symbol(s Any) Symbol {
 	case Symbol:
 		return v
 	default:
-		panic("Invalid symbol")
+		panic("Invalid symbol: " + lispstr(s))
 	}
 }
 
@@ -36,7 +37,7 @@ func to_list(s Any) List {
 	case List:
 		return v
 	default:
-		panic("Invalid list")
+		panic("Invalid list: " + lispstr(s))
 	}
 }
 
@@ -46,7 +47,7 @@ func to_function(s Any) PureFunction {
 		return v
 	default:
 		fmt.Println(reflect.TypeOf(v))
-		panic("Invalid function, ")
+		panic("Invalid function: " + lispstr(s))
 	}
 }
 
@@ -245,7 +246,7 @@ func eval_quote(expr List) Any {
 	if len(expr) != 2 {
 		panic("'quote' statement requires exactly 1 argument (quote exp), while provided: " + lispstr(expr))
 	}
-	return expr[1:]
+	return expr[1]
 }
 
 func (env *Env) print() Any {
@@ -273,8 +274,6 @@ func (env *Env) eval_builtin(s Builtin, expr List) Any {
 		return env.eval_set(expr)
 	case "lambda":
 		return env.eval_lambda(expr)
-	case "print-env":
-		return env.print()
 	default:
 		panic("Unknown builtin")
 	}
@@ -338,7 +337,7 @@ func cdr(args List) Any {
 
 func cons(args List) Any {
 	if len(args) != 2 {
-		panic("'cons' function requires exactly 2 arguments (const head exp), while provided: ")
+		panic("'cons' function requires exactly 2 arguments (const head exp), while provided: " + lispstr(args))
 	}
 	var r List
 	tail := List{}
@@ -353,14 +352,203 @@ func list(args List) Any {
 	return args
 }
 
+func fold_nums(args List, init Any, name string, f_i func(Int, Int) Int, f_f func(Float, Float) Float) Any {
+	var acc Any
+	acc = init
+	//TODO: type switch for multiple args
+	for _, item := range args {
+		switch a := acc.(type) {
+		case Int:
+			switch v := item.(type) {
+			case Int:
+				acc = f_i(a, v)
+			case Float:
+				acc = f_f(Float(a), v)
+			default:
+				panic("Invalid '" + name + "' argument: " + lispstr(args))
+			}
+		case Float:
+			switch v := item.(type) {
+			case Int:
+				acc = f_f(a, Float(v))
+			case Float:
+				acc = f_f(a, v)
+			default:
+				panic("Invalid '" + name + "' argument: " + lispstr(args))
+			}
+		default:
+			panic("'" + name + "' Error")
+		}
+	}
+
+	return acc
+}
+
+func numeric_2_args(args List, name string, f_i func(Int, Int) Int, f_f func(Float, Float) Float) Any {
+	if len(args) != 2 {
+		panic("'" + name + "' requires exactly 2 arguments, provided: " + lispstr(args))
+	}
+
+	lhs := args[0]
+	rhs := args[1]
+
+	switch x := lhs.(type) {
+	case Int:
+		switch y := rhs.(type) {
+		case Int:
+			return f_i(x, y)
+		case Float:
+			return f_f(Float(x), y)
+		default:
+			panic("Invalid '" + name + "' argument: " + lispstr(args))
+		}
+	case Float:
+		switch y := rhs.(type) {
+		case Int:
+			return f_f(x, Float(y))
+		case Float:
+			return f_f(x, y)
+		default:
+			panic("Invalid '" + name + "' argument: " + lispstr(args))
+		}
+	default:
+		panic("'" + name + "' Error")
+	}
+}
+
+func sum(args List) Any {
+	return fold_nums(args, Int(0), "+",
+		func(a Int, b Int) Int { return a + b },
+		func(a Float, b Float) Float { return a + b })
+}
+
+func sub(args List) Any {
+	return numeric_2_args(args, "-",
+		func(a Int, b Int) Int { return a - b },
+		func(a Float, b Float) Float { return a - b })
+}
+
+func prod(args List) Any {
+	return fold_nums(args, Int(1), "*",
+		func(a Int, b Int) Int { return a * b },
+		func(a Float, b Float) Float { return a * b })
+}
+
+func div(args List) Any {
+	return numeric_2_args(args, "/",
+		func(a Int, b Int) Int { return a / b },
+		func(a Float, b Float) Float { return a / b })
+}
+
+func numeric_2_floats(args List, name string, f func(Float, Float) Any) Any {
+	if len(args) != 2 {
+		panic("'" + name + "' requires exactly 2 arguments, provided: " + lispstr(args))
+	}
+
+	lhs := args[0]
+	rhs := args[1]
+
+	switch x := lhs.(type) {
+	case Int:
+		switch y := rhs.(type) {
+		case Int:
+			return f(Float(x), Float(y))
+		case Float:
+			return f(Float(x), y)
+		default:
+			panic("Invalid '" + name + "' argument: " + lispstr(args))
+		}
+	case Float:
+		switch y := rhs.(type) {
+		case Int:
+			return f(x, Float(y))
+		case Float:
+			return f(x, y)
+		default:
+			panic("Invalid '" + name + "' argument: " + lispstr(args))
+		}
+	default:
+		panic("'" + name + "' Error")
+	}
+}
+
+func gt(args List) Any {
+	return numeric_2_floats(args, ">", func(a Float, b Float) Any { return Bool(a > b) })
+}
+
+func lt(args List) Any {
+	return numeric_2_floats(args, ">", func(a Float, b Float) Any { return Bool(a < b) })
+}
+
+func ge(args List) Any {
+	return numeric_2_floats(args, ">", func(a Float, b Float) Any { return Bool(a >= b) })
+}
+
+func le(args List) Any {
+	return numeric_2_floats(args, ">", func(a Float, b Float) Any { return Bool(a <= b) })
+}
+
+func list_cmp(a List, b List) Bool {
+	if len(a) != len(b) {
+		return false
+	}
+
+	for i, _ := range a {
+		if !equal(a[i], b[i]) {
+			return false
+		}
+	}
+
+	return true
+}
+
+func equal(a Any, b Any) Bool {
+	switch x := a.(type) {
+	case List:
+		switch y := b.(type) {
+		case List:
+			return list_cmp(x, y)
+		default:
+			return Bool(false)
+		}
+	default:
+		return Bool(a == b)
+	}
+}
+
+func eq(args List) Any {
+	if len(args) != 2 {
+		panic("equality requires exactly 2 arguments, provided: " + lispstr(args))
+	}
+
+	lhs := args[0]
+	rhs := args[1]
+
+	return equal(lhs, rhs)
+}
+
 func standard_env() *Env {
 	env := Env{}
 
 	env.named_objects = map[Symbol]Any{
-		"car":  car,
-		"cdr":  cdr,
-		"cons": cons,
-		"list": list,
+		"car":    car,
+		"cdr":    cdr,
+		"cons":   cons,
+		"list":   list,
+		"+":      sum,
+		"-":      sub,
+		"*":      prod,
+		"/":      div,
+		">":      gt,
+		"<":      lt,
+		">=":     ge,
+		"<=":     le,
+		"=":      eq,
+		"begin":  func(args List) Any { return args[len(args)-1] },
+		"pi":     Float(math.Pi),
+		"eq?":    func(args List) Any { return Bool(args[0] == args[1]) },
+		"equal?": eq,
+		"length": func(args List) Any { return Int(len(to_list(args[0]))) },
 	}
 
 	return &env
@@ -384,15 +572,14 @@ func newParser(s string) *Parser {
 }
 
 var builtins = map[string]Any{
-	"if":        Builtin("if"),
-	"quote":     Builtin("quote"),
-	"define":    Builtin("define"),
-	"set!":      Builtin("set!"),
-	"lambda":    Builtin("lambda"),
-	"t":         Bool(true),
-	"f":         Bool(false),
-	"nil":       nil,
-	"print-env": Builtin("print-env"),
+	"if":     Builtin("if"),
+	"quote":  Builtin("quote"),
+	"define": Builtin("define"),
+	"set!":   Builtin("set!"),
+	"lambda": Builtin("lambda"),
+	"t":      Bool(true),
+	"f":      Bool(false),
+	"nil":    nil,
 }
 
 func (p *Parser) parse_atom(token string) Any {
@@ -448,30 +635,19 @@ func repl() {
 	env := standard_env()
 	for {
 		fmt.Print("lisp> ")
-		line, _ := reader.ReadString('\n')
+		line, err := reader.ReadString('\n')
+		if err != nil {
+			break
+		}
 		exec(env, line)
 	}
 }
 
-func test() {
-	env := standard_env()
-
-	l2 := List{Symbol("cons"), Symbol("list"), nil}
-	fmt.Println(l2)
-	r2 := env.eval(l2)
-	fmt.Println(r2)
-
-	l3 := List{Symbol("cons"), Int(42), l2}
-	fmt.Println(l3)
-	r3 := env.eval(l3)
-	fmt.Println(r3)
-
-	l4 := newParser("(car (cdr (list 1 2.01 3)))").parse_list()
-	fmt.Println(l4)
-	r4 := env.eval(l4)
-	fmt.Println(r4)
-}
-
 func main() {
-	repl()
+	if len(os.Args) > 1 {
+		env := standard_env()
+		exec(env, strings.Join(os.Args[1:], " "))
+	} else {
+		repl()
+	}
 }
