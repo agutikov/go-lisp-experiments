@@ -1,18 +1,13 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
+	"os"
 	"reflect"
+	"strconv"
+	"strings"
 )
-
-/*
-	literals: nil, bool, int, float, string
-	symbol
-	list
-	dot pair - ????
-	s expression - ???
-	form - ????
-*/
 
 type Bool bool
 type Int int64
@@ -79,10 +74,10 @@ func lispstr(expr Any) string {
 	case List:
 		s := "("
 		for i, item := range v {
-			s += lispstr(item)
 			if i != 0 {
 				s += " "
 			}
+			s += lispstr(item)
 		}
 		s += ")"
 		return s
@@ -99,11 +94,11 @@ type Env struct {
 }
 
 func newEnv(parent *Env) *Env {
-	e := Env{parent: parent}
+	e := Env{parent: parent, named_objects: map[Symbol]Any{}}
 	return &e
 }
 
-func (env *Env) assignVars(vars []Symbol, values List) {
+func (env *Env) assign_vars(vars []Symbol, values List) {
 	if len(vars) != len(values) {
 		panic("Invalid number of values provided")
 	}
@@ -241,23 +236,33 @@ func (env *Env) eval_lambda(expr List) Any {
 	return func(args List) Any {
 		// Eval body in the new nested environment
 		e := newEnv(env)
-		e.assignVars(params, args)
+		e.assign_vars(params, args)
 		return e.eval(body)
 	}
 }
 
-func (env *Env) eval_quote(expr List) Any {
+func eval_quote(expr List) Any {
 	if len(expr) != 2 {
 		panic("'quote' statement requires exactly 1 argument (quote exp), while provided: " + lispstr(expr))
 	}
 	return expr[1:]
 }
 
+func (env *Env) print() Any {
+	fmt.Println("named_objects: ", env.named_objects)
+	fmt.Println("parent: ", env.parent)
+	fmt.Println()
+	if env.parent != nil {
+		env.parent.print()
+	}
+	return nil
+}
+
 func (env *Env) eval_builtin(s Builtin, expr List) Any {
 	switch s { //TODO: is there any benefit of using map[Symbol]EnvFunction ?
 	case "quote":
 		//TODO: unquote????
-		return env.eval_quote(expr)
+		return eval_quote(expr)
 	case "if":
 		return env.eval_if(expr)
 	case "define":
@@ -268,6 +273,8 @@ func (env *Env) eval_builtin(s Builtin, expr List) Any {
 		return env.eval_set(expr)
 	case "lambda":
 		return env.eval_lambda(expr)
+	case "print-env":
+		return env.print()
 	default:
 		panic("Unknown builtin")
 	}
@@ -318,14 +325,15 @@ func (env *Env) eval(expr Any) Any {
 }
 
 func car(args List) Any {
-	if len(args) == 0 {
+	l := to_list(args[0])
+	if len(l) == 0 {
 		return nil
 	}
-	return args[0]
+	return l[0]
 }
 
 func cdr(args List) Any {
-	return args[1:]
+	return to_list(args[0])[1:]
 }
 
 func cons(args List) Any {
@@ -358,10 +366,94 @@ func standard_env() *Env {
 	return &env
 }
 
-func main() {
-	l1 := List{Symbol("+"), Int(2), Int(3)}
-	fmt.Println(l1)
+func tokenize(s string) []string {
+	s = strings.Replace(s, "(", " ( ", -1)
+	s = strings.Replace(s, ")", " ) ", -1)
+	return strings.Fields(s)
+}
 
+type Parser struct {
+	tokens []string
+	pos    int
+}
+
+func newParser(s string) *Parser {
+	p := Parser{pos: 0}
+	p.tokens = tokenize(s)
+	return &p
+}
+
+var builtins = map[string]Any{
+	"if":        Builtin("if"),
+	"quote":     Builtin("quote"),
+	"define":    Builtin("define"),
+	"set!":      Builtin("set!"),
+	"lambda":    Builtin("lambda"),
+	"t":         Bool(true),
+	"f":         Bool(false),
+	"nil":       nil,
+	"print-env": Builtin("print-env"),
+}
+
+func (p *Parser) parse_atom(token string) Any {
+	if v, ok := builtins[token]; ok {
+		return v
+	}
+
+	int_val, err := strconv.Atoi(token)
+	if err == nil {
+		return Int(int_val)
+	}
+
+	float_val, err := strconv.ParseFloat(token, 64)
+	if err == nil {
+		return Float(float_val)
+	}
+
+	//TODO: strings - with parser generator
+	return Symbol(token)
+}
+
+func (p *Parser) parse_list() Any {
+	token := p.tokens[p.pos]
+	p.pos++
+	if token == "(" {
+		l := List{}
+		for p.tokens[p.pos] != ")" {
+			l = append(l, p.parse_list())
+		}
+		p.pos++
+		return l
+	} else if token == ")" {
+		panic("Unexpected ')'")
+	} else {
+		return p.parse_atom(token)
+	}
+}
+
+func exec(env *Env, line string) {
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Println(r)
+		}
+	}()
+
+	expr := newParser(line).parse_list()
+	r := env.eval(expr)
+	fmt.Println(lispstr(r))
+}
+
+func repl() {
+	reader := bufio.NewReader(os.Stdin)
+	env := standard_env()
+	for {
+		fmt.Print("lisp> ")
+		line, _ := reader.ReadString('\n')
+		exec(env, line)
+	}
+}
+
+func test() {
 	env := standard_env()
 
 	l2 := List{Symbol("cons"), Symbol("list"), nil}
@@ -374,4 +466,12 @@ func main() {
 	r3 := env.eval(l3)
 	fmt.Println(r3)
 
+	l4 := newParser("(car (cdr (list 1 2.01 3)))").parse_list()
+	fmt.Println(l4)
+	r4 := env.eval(l4)
+	fmt.Println(r4)
+}
+
+func main() {
+	repl()
 }
