@@ -22,7 +22,7 @@ func to_symbol(s Any) Symbol {
 	case Symbol:
 		return v
 	default:
-		panic("Invalid symbol: " + lispstr(s))
+		panic("Invalid symbol: " + LispyStr(s))
 	}
 }
 
@@ -31,7 +31,7 @@ func to_list(s Any) List {
 	case List:
 		return v
 	default:
-		panic("Invalid list: " + lispstr(s))
+		panic("Invalid list: " + LispyStr(s))
 	}
 }
 
@@ -41,11 +41,11 @@ func to_function(s Any) PureFunction {
 		return v
 	default:
 		fmt.Println(reflect.TypeOf(v))
-		panic("Invalid function: " + lispstr(s))
+		panic("Invalid function: " + LispyStr(s))
 	}
 }
 
-func lispstr(expr Any) string {
+func LispyStr(expr Any) string {
 	if expr == nil {
 		return "nil"
 	}
@@ -72,7 +72,7 @@ func lispstr(expr Any) string {
 			if i != 0 {
 				s += " "
 			}
-			s += lispstr(item)
+			s += LispyStr(item)
 		}
 		s += ")"
 		return s

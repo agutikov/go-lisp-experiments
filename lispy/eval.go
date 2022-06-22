@@ -25,13 +25,13 @@ func if_test(value Any) bool {
 func (env *Env) eval_if(expr ...Any) Any {
 	//TODO: verify number of args on parsing stage
 	if len(expr) != 4 {
-		panic("'if' statement requires exactly 3 arguments (if test conseq alt), while provided: " + lispstr(expr))
+		panic("'if' statement requires exactly 3 arguments (if test conseq alt), while provided: " + LispyStr(expr))
 	}
 	test := expr[1]
 	conseq := expr[2]
 	alt := expr[3]
 
-	v := env.eval(test)
+	v := env.Eval(test)
 
 	if if_test(v) {
 		return conseq
@@ -43,12 +43,12 @@ func (env *Env) eval_if(expr ...Any) Any {
 func (env *Env) eval_define(expr ...Any) Any {
 	//TODO: verify number of args on parsing stage
 	if len(expr) != 3 {
-		panic("'define' statement requires exactly 2 arguments (define name exp), while provided: " + lispstr(expr))
+		panic("'define' statement requires exactly 2 arguments (define name exp), while provided: " + LispyStr(expr))
 	}
 	name := expr[1]
 	exp := expr[2]
 
-	value := env.eval(exp)
+	value := env.Eval(exp)
 
 	switch s := name.(type) {
 	case Symbol:
@@ -63,12 +63,12 @@ func (env *Env) eval_define(expr ...Any) Any {
 func (env *Env) eval_set(expr ...Any) Any {
 	//TODO: verify number of args on parsing stage
 	if len(expr) != 3 {
-		panic("'set!' statement requires exactly 2 arguments (set! name exp), while provided: " + lispstr(expr))
+		panic("'set!' statement requires exactly 2 arguments (set! name exp), while provided: " + LispyStr(expr))
 	}
 	name := expr[1]
 	exp := expr[2]
 
-	value := env.eval(exp)
+	value := env.Eval(exp)
 
 	switch s := name.(type) {
 	case Symbol:
@@ -95,7 +95,7 @@ func lambda_args(vars Any) []Symbol {
 func (env *Env) eval_lambda(expr ...Any) Any {
 	//TODO: verify number of args on parsing stage
 	if len(expr) != 3 {
-		panic("'lambda' statement requires exactly 2 arguments (lambda (vars...) body), while provided: " + lispstr(expr))
+		panic("'lambda' statement requires exactly 2 arguments (lambda (vars...) body), while provided: " + LispyStr(expr))
 	}
 	p := expr[1]
 	body := expr[2]
@@ -103,17 +103,17 @@ func (env *Env) eval_lambda(expr ...Any) Any {
 	params := lambda_args(p)
 
 	// Return callable which will
-	return func(args List) Any {
+	return func(args ...Any) Any {
 		// Eval body in the new nested environment
 		e := newEnv(env)
 		e.assign_vars(params, args)
-		return e.eval(body)
+		return e.Eval(body)
 	}
 }
 
 func eval_quote(expr ...Any) Any {
 	if len(expr) != 2 {
-		panic("'quote' statement requires exactly 1 argument (quote exp), while provided: " + lispstr(expr))
+		panic("'quote' statement requires exactly 1 argument (quote exp), while provided: " + LispyStr(expr))
 	}
 	return expr[1]
 }
@@ -141,7 +141,7 @@ func (env *Env) eval_builtin(s Builtin, expr List) Any {
 func (env *Env) eval_args(args ...Any) List {
 	r := make(List, 0)
 	for _, elem := range args {
-		r = append(r, env.eval(elem))
+		r = append(r, env.Eval(elem))
 	}
 	return r
 }
@@ -149,7 +149,7 @@ func (env *Env) eval_args(args ...Any) List {
 func (env *Env) eval_expr(expr List) Any {
 	head := expr[0]
 	tail := expr[1:]
-	f_value := env.eval(head)
+	f_value := env.Eval(head)
 	f := to_function(f_value)
 	args := env.eval_args(tail...)
 	return f(args...)
@@ -169,7 +169,7 @@ func (env *Env) eval_list(expr List) Any {
 	}
 }
 
-func (env *Env) eval(expr Any) Any {
+func (env *Env) Eval(expr Any) Any {
 	switch v := expr.(type) {
 	case List:
 		return env.eval_list(v)
@@ -180,4 +180,8 @@ func (env *Env) eval(expr Any) Any {
 		// Other atoms are const literals
 		return v
 	}
+}
+
+func Lambda(s string) PureFunction {
+	return to_function(StdEnv().Eval(NewParser(s).ParseList()))
 }

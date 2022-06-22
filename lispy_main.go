@@ -15,14 +15,14 @@ func exec(env *lispy.Env, line string) {
 		}
 	}()
 
-	expr := lispy.newParser(line).parse_list()
-	r := env.eval(expr)
-	fmt.Println(lispstr(r))
+	expr := lispy.NewParser(line).ParseList()
+	r := env.Eval(expr)
+	fmt.Println(lispy.LispyStr(r))
 }
 
 func repl() {
 	reader := bufio.NewReader(os.Stdin)
-	env := standard_env()
+	env := lispy.StdEnv()
 	for {
 		fmt.Print("lisp> ")
 		line, err := reader.ReadString('\n')
@@ -35,7 +35,7 @@ func repl() {
 
 func main() {
 	if len(os.Args) > 1 {
-		env := standard_env()
+		env := lispy.StdEnv()
 		exec(env, strings.Join(os.Args[1:], " "))
 	} else {
 		repl()

@@ -12,7 +12,7 @@ func cdr(args ...Any) Any {
 
 func cons(args ...Any) Any {
 	if len(args) != 2 {
-		panic("'cons' function requires exactly 2 arguments (const head exp), while provided: " + lispstr(args))
+		panic("'cons' function requires exactly 2 arguments (const head exp), while provided: " + LispyStr(args))
 	}
 	var r List
 	tail := List{}
@@ -40,7 +40,7 @@ func fold_nums(name string, f_i func(Int, Int) Int, f_f func(Float, Float) Float
 			case Float:
 				acc = f_f(Float(a), v)
 			default:
-				panic("Invalid '" + name + "' argument: " + lispstr(args))
+				panic("Invalid '" + name + "' argument: " + LispyStr(args))
 			}
 		case Float:
 			switch v := item.(type) {
@@ -49,7 +49,7 @@ func fold_nums(name string, f_i func(Int, Int) Int, f_f func(Float, Float) Float
 			case Float:
 				acc = f_f(a, v)
 			default:
-				panic("Invalid '" + name + "' argument: " + lispstr(args))
+				panic("Invalid '" + name + "' argument: " + LispyStr(args))
 			}
 		default:
 			panic("'" + name + "' Error")
@@ -61,7 +61,7 @@ func fold_nums(name string, f_i func(Int, Int) Int, f_f func(Float, Float) Float
 
 func numeric_2_args(name string, f_i func(Int, Int) Int, f_f func(Float, Float) Float, args ...Any) Any {
 	if len(args) != 2 {
-		panic("'" + name + "' requires exactly 2 arguments, provided: " + lispstr(args))
+		panic("'" + name + "' requires exactly 2 arguments, provided: " + LispyStr(args))
 	}
 
 	lhs := args[0]
@@ -75,7 +75,7 @@ func numeric_2_args(name string, f_i func(Int, Int) Int, f_f func(Float, Float) 
 		case Float:
 			return f_f(Float(x), y)
 		default:
-			panic("Invalid '" + name + "' argument: " + lispstr(args))
+			panic("Invalid '" + name + "' argument: " + LispyStr(args))
 		}
 	case Float:
 		switch y := rhs.(type) {
@@ -84,7 +84,7 @@ func numeric_2_args(name string, f_i func(Int, Int) Int, f_f func(Float, Float) 
 		case Float:
 			return f_f(x, y)
 		default:
-			panic("Invalid '" + name + "' argument: " + lispstr(args))
+			panic("Invalid '" + name + "' argument: " + LispyStr(args))
 		}
 	default:
 		panic("'" + name + "' Error")
@@ -125,7 +125,7 @@ func div(args ...Any) Any {
 
 func numeric_2_floats(name string, f func(Float, Float) Any, args ...Any) Any {
 	if len(args) != 2 {
-		panic("'" + name + "' requires exactly 2 arguments, provided: " + lispstr(args))
+		panic("'" + name + "' requires exactly 2 arguments, provided: " + LispyStr(args))
 	}
 
 	lhs := args[0]
@@ -139,7 +139,7 @@ func numeric_2_floats(name string, f func(Float, Float) Any, args ...Any) Any {
 		case Float:
 			return f(Float(x), y)
 		default:
-			panic("Invalid '" + name + "' argument: " + lispstr(args))
+			panic("Invalid '" + name + "' argument: " + LispyStr(args))
 		}
 	case Float:
 		switch y := rhs.(type) {
@@ -148,7 +148,7 @@ func numeric_2_floats(name string, f func(Float, Float) Any, args ...Any) Any {
 		case Float:
 			return f(x, y)
 		default:
-			panic("Invalid '" + name + "' argument: " + lispstr(args))
+			panic("Invalid '" + name + "' argument: " + LispyStr(args))
 		}
 	default:
 		panic("'" + name + "' Error")
@@ -201,13 +201,13 @@ func equal(a Any, b Any) Bool {
 
 func eq(args ...Any) Any {
 	if len(args) != 2 {
-		panic("equality requires exactly 2 arguments, provided: " + lispstr(args))
+		panic("equality requires exactly 2 arguments, provided: " + LispyStr(args))
 	}
 
 	return equal(args[0], args[1])
 }
 
-func standard_env() *Env {
+func StdEnv() *Env {
 	env := Env{}
 
 	env.named_objects = map[Symbol]Any{

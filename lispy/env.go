@@ -7,12 +7,12 @@ type Env struct {
 	named_objects map[Symbol]Any
 }
 
-func (env *Env) print() Any {
+func (env *Env) Print() Any {
 	fmt.Println("named_objects: ", env.named_objects)
 	fmt.Println("parent: ", env.parent)
 	fmt.Println()
 	if env.parent != nil {
-		env.parent.print()
+		env.parent.Print()
 	}
 	return nil
 }
