@@ -24,12 +24,16 @@ func repl() {
 	reader := bufio.NewReader(os.Stdin)
 	env := lispy.StdEnv()
 	for {
-		fmt.Print("lisp> ")
+		fmt.Print("go-lis.py> ")
 		line, err := reader.ReadString('\n')
 		if err != nil {
+			fmt.Println()
 			break
 		}
-		exec(env, line)
+		line = strings.TrimSpace(line)
+		if len(line) > 0 {
+			exec(env, line)
+		}
 	}
 }
 
