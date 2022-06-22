@@ -1,6 +1,8 @@
 package lispy
 
-import "math"
+import (
+	"math"
+)
 
 func car(arg ...Any) Any {
 	return to_list(arg[0])[0]
@@ -99,7 +101,21 @@ func sum(args ...Any) Any {
 	)
 }
 
+func minus(arg Any) Any {
+	switch x := arg.(type) {
+	case Int:
+		return Int(-int64(x))
+	case Float:
+		return Float(-float64(x))
+	default:
+		panic("Invalid unary '-' argument: " + LispyStr(arg))
+	}
+}
+
 func sub(args ...Any) Any {
+	if len(args) == 1 {
+		return minus(args[0])
+	}
 	return numeric_2_args("-",
 		func(a Int, b Int) Int { return a - b },
 		func(a Float, b Float) Float { return a - b },
@@ -207,6 +223,84 @@ func eq(args ...Any) Any {
 	return equal(args[0], args[1])
 }
 
+//TODO: package constraints is not in GOROOT
+//func max[T constraints.Ordered](a T, b T) T {
+func max(a int, b int) int {
+	if b < a {
+		return a
+	} else {
+		return b
+	}
+}
+
+func get(s []Any, i int, d Any) Any {
+	if len(s) > i {
+		return s[i]
+	} else {
+		return d
+	}
+}
+
+func zip(v []Any) [][]Any {
+	tmp := [][]Any{}
+	size := 0
+	for _, item := range v {
+		l := to_list(item)
+		tmp = append(tmp, l)
+		size = max(size, len(l))
+	}
+	r := [][]Any{}
+	for i := 0; i < size; i++ {
+		item := []Any{}
+		for _, row := range tmp {
+			item = append(item, get(row, i, nil))
+		}
+		r = append(r, item)
+	}
+	return r
+}
+
+func lispy_map(args ...Any) Any {
+	if len(args) < 2 {
+		return nil
+	}
+	f := to_function(args[0])
+	a := zip(args[1:])
+
+	r := List{}
+	for _, item := range a {
+		r = append(r, f(item...))
+	}
+	return r
+}
+
+//TODO: flatten l1 unwraps only upper level of lists
+func flatten_l1(args List) List {
+	r := List{}
+
+	for _, item := range args {
+		switch v := item.(type) {
+		case List:
+			for _, i := range v {
+				r = append(r, i)
+			}
+		default:
+			r = append(r, v)
+		}
+	}
+
+	return r
+}
+
+func apply(args ...Any) Any {
+	if len(args) < 2 {
+		return nil
+	}
+	f := to_function(args[0])
+	a := flatten_l1(args[1:])
+	return f(a...)
+}
+
 func StdEnv() *Env {
 	env := Env{}
 
@@ -224,12 +318,15 @@ func StdEnv() *Env {
 		">=":   ge,
 		"<=":   le,
 		"=":    eq,
-		//TODO: common way to check the number of args and their types
+		//TODO: common way to check the number of args and the types
 		"begin":  func(args ...Any) Any { return args[len(args)-1] },
 		"pi":     Float(math.Pi),
 		"eq?":    func(args ...Any) Any { return Bool(args[0] == args[1]) },
 		"equal?": eq,
 		"length": func(args ...Any) Any { return Int(len(to_list(args[0]))) },
+		"not":    func(args ...Any) Any { return Bool(!if_test(args[0])) },
+		"apply":  apply,
+		"map":    lispy_map,
 	}
 
 	return &env

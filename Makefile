@@ -6,7 +6,7 @@ GO_LISPY_SRCS := lispy_main.go
 
 BINARIES := go-lispy go-lispy-debug
 
-
+# TODO: dependency from lispy package
 go-lispy: $(GO_LISPY_SRCS) | lispy
 	go build -o $@ $^
 
@@ -26,6 +26,6 @@ test:
 .PHONY: clean
 clean:
 	go clean
-	rm $(BINARIES)
+	rm -f $(BINARIES)
 
 

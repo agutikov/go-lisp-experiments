@@ -40,8 +40,7 @@ func to_function(s Any) PureFunction {
 	case PureFunction:
 		return v
 	default:
-		fmt.Println(reflect.TypeOf(v))
-		panic("Invalid function: " + LispyStr(s))
+		panic("Invalid function: " + LispyStr(s) + fmt.Sprintf(" type: %v", reflect.TypeOf(v)) + "; probably evaluated the unquoted list")
 	}
 }
 

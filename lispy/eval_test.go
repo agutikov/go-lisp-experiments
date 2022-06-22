@@ -41,7 +41,6 @@ func Test_set(t *testing.T) {
 	e := StdEnv()
 
 	s1 := `(begin
-		(define minus (lambda (x) (- 0 x)))
 		(define bar (lambda (x) (* (foo x) 2)))
 		(define foo (lambda (x) (if (> x 0) x 0)))
 		(bar -1)
@@ -56,7 +55,7 @@ func Test_set(t *testing.T) {
 	// TODO: set! replaces the foo in the env and bar behavior changes
 
 	s2 := `(begin
-		(set! foo (lambda (x) (minus x)))
+		(set! foo (lambda (x) (- x)))
 		(bar -1)
 	)`
 	expr2 := NewParser(s2).ParseList()
@@ -80,6 +79,11 @@ func Test_EvalStr(t *testing.T) {
 		{"(define x (list 1 2 3 4))", "nil"},
 		{"(car x)", "1"},
 		{"(cdr x)", "(2 3 4)"},
+		{"(map - x)", "(-1 -2 -3 -4)"},
+		{"(map cons x ())", "((1) (2) (3) (4))"},
+		{"(map * (list 1 2) (list 10 20) (list -1 1))", "(-10 40)"},
+		{"(apply + x)", "10"},
+		{"(apply + 0 1 (list 2 3) 4)", "10"},
 	}
 	e := StdEnv()
 	for _, test := range examples {
