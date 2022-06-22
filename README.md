@@ -87,3 +87,13 @@ fmt.Println(r)
 ```
 
 
+
+# What I've learned about Lisp
+
+1. Syntactic form differs from procedure call in a way that different syntactic forms can eval or not eval some of it's arguments, while procedure call (as a syntactic form itself) eval all arguments before calling the procedure.
+   1. procedure call - eval all args before call;
+   2. quote - does not eval any arg;
+   3. define - does not eval first, eval second;
+   4. set! - same as define;
+   5. if - eval first, and then eval one of second or third;
+   6. lambda - does not eval any of two, but will eval body when been called, or can eval body partially, or behave any different way;
