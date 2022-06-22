@@ -2,10 +2,11 @@ package main
 
 import (
 	"bufio"
-	"example/user/golisp/lispy"
 	"fmt"
 	"os"
 	"strings"
+
+	"github.com/agutikov/go-lisp-experiments/lispy"
 )
 
 func exec(env *lispy.Env, line string) {
@@ -15,7 +16,7 @@ func exec(env *lispy.Env, line string) {
 		}
 	}()
 
-	expr := lispy.NewParser(line).ParseList()
+	expr := lispy.ParseExpr(line)
 	r := env.Eval(expr)
 	fmt.Println(lispy.LispyStr(r))
 }

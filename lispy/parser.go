@@ -16,7 +16,7 @@ type Parser struct {
 	pos    int
 }
 
-func NewParser(s string) *Parser {
+func newParser(s string) *Parser {
 	p := Parser{pos: 0}
 	p.tokens = tokenize(s)
 	return &p
@@ -52,13 +52,13 @@ func (p *Parser) parse_atom(token string) Any {
 	return Symbol(token)
 }
 
-func (p *Parser) ParseList() Any {
+func (p *Parser) parse_list() Any {
 	token := p.tokens[p.pos]
 	p.pos++
 	if token == "(" {
 		l := List{}
 		for p.tokens[p.pos] != ")" {
-			l = append(l, p.ParseList())
+			l = append(l, p.parse_list())
 		}
 		p.pos++
 		return l
@@ -67,4 +67,8 @@ func (p *Parser) ParseList() Any {
 	} else {
 		return p.parse_atom(token)
 	}
+}
+
+func ParseExpr(s string) Any {
+	return newParser(s).parse_list()
 }

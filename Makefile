@@ -13,6 +13,9 @@ go-lispy: $(GO_LISPY_SRCS) | lispy
 go-lispy-debug: $(GO_LISPY_SRCS) | lispy
 	go build -gcflags "-N" -o $@ $^
 
+.PHONY: run
+run:
+	go run $(GO_LISPY_SRCS)
 
 .PHONY: lispy
 lispy:
@@ -20,7 +23,7 @@ lispy:
 
 .PHONY: test
 test:
-	go test ./...
+	go test -v ./...
 
 
 .PHONY: clean

@@ -16,8 +16,7 @@ func Test_ParserDirect(t *testing.T) {
 		"(define foo (x y) (+ (* x x) (* y y)))",
 	}
 	for _, line := range lines {
-		p := NewParser(line)
-		lst := p.ParseList()
+		lst := ParseExpr(line)
 		s := LispyStr(lst)
 		if s != line {
 			t.Errorf("String representations are not equal: %q and %q", line, s)
@@ -37,8 +36,7 @@ func Test_ParserReverse(t *testing.T) {
 	}
 	for _, expr := range exprs {
 		s := LispyStr(expr)
-		p := NewParser(s)
-		lst := p.ParseList()
+		lst := ParseExpr(s)
 		if reflect.TypeOf(lst) != reflect.TypeOf(expr) {
 			t.Errorf("Types are not equal: %v and %v", expr, lst)
 		}

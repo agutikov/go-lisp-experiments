@@ -29,6 +29,16 @@ func list(args ...Any) Any {
 	return List(args)
 }
 
+func fold_bools(f func(bool, bool) bool, init bool, args ...Any) Bool {
+	acc := init
+
+	for _, item := range args {
+		acc = f(acc, if_test(item))
+	}
+
+	return Bool(acc)
+}
+
 func fold_nums(name string, f_i func(Int, Int) Int, f_f func(Float, Float) Float, init Any, args ...Any) Any {
 	var acc Any
 	acc = init
@@ -325,6 +335,8 @@ func StdEnv() *Env {
 		"equal?": eq,
 		"length": func(args ...Any) Any { return Int(len(to_list(args[0]))) },
 		"not":    func(args ...Any) Any { return Bool(!if_test(args[0])) },
+		"and":    func(args ...Any) Any { return fold_bools(func(x bool, y bool) bool { return x && y }, true, args...) },
+		"or":     func(args ...Any) Any { return fold_bools(func(x bool, y bool) bool { return x || y }, false, args...) },
 		"apply":  apply,
 		"map":    lispy_map,
 	}

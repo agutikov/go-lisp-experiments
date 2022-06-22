@@ -1,6 +1,7 @@
 package lispy
 
 import (
+	"fmt"
 	"reflect"
 	"testing"
 )
@@ -24,7 +25,7 @@ func Test_Eval(t *testing.T) {
 
 func Test_define(t *testing.T) {
 	expr := "(define foo (lambda (x) (* x x)))"
-	lst := NewParser(expr).ParseList()
+	lst := ParseExpr(expr)
 	e := StdEnv()
 	e.Eval(lst)
 	v, ok := e.named_objects["foo"]
@@ -45,7 +46,7 @@ func Test_set(t *testing.T) {
 		(define foo (lambda (x) (if (> x 0) x 0)))
 		(bar -1)
 	)`
-	expr1 := NewParser(s1).ParseList()
+	expr1 := ParseExpr(s1)
 
 	r1 := e.Eval(expr1)
 	if LispyStr(r1) != "0" {
@@ -58,7 +59,7 @@ func Test_set(t *testing.T) {
 		(set! foo (lambda (x) (- x)))
 		(bar -1)
 	)`
-	expr2 := NewParser(s2).ParseList()
+	expr2 := ParseExpr(s2)
 
 	r2 := e.Eval(expr2)
 	if LispyStr(r2) != "2" {
@@ -76,7 +77,7 @@ func Test_EvalStr(t *testing.T) {
 		{"(cons 1 ())", "(1)"},
 		{"(cons 1 nil)", "(1)"},
 		{"(cons 3 (cons 2 (cons 1 nil)))", "(3 2 1)"},
-		{"(define x (list 1 2 3 4))", "nil"},
+		{"(define x (list 1 2 3 4))", "(1 2 3 4)"},
 		{"(car x)", "1"},
 		{"(cdr x)", "(2 3 4)"},
 		{"(map - x)", "(-1 -2 -3 -4)"},
@@ -84,12 +85,15 @@ func Test_EvalStr(t *testing.T) {
 		{"(map * (list 1 2) (list 10 20) (list -1 1))", "(-10 40)"},
 		{"(apply + x)", "10"},
 		{"(apply + 0 1 (list 2 3) 4)", "10"},
+		{"(or nil 0 () t)", "t"},
+		{"(cons nil nil)", "(nil)"},
+		{"(and t 1 (cons nil nil) f)", "f"},
 	}
 	e := StdEnv()
 	for _, test := range examples {
 		expr := test[0]
 		expected := test[1]
-		lst := NewParser(expr).ParseList()
+		lst := ParseExpr(expr)
 		result := e.Eval(lst)
 		res_str := LispyStr(result)
 		if res_str != expected {
@@ -103,5 +107,29 @@ func Test_lambda(t *testing.T) {
 	r1 := f1(Int(2), Float(4))
 	if r1 != Float(0.25) {
 		t.Errorf("Unexpected r1: %v", r1)
+	}
+
+	// from README.md
+	fact := Lambda("(define fact (lambda (n) (if (<= n 1) 1.0 (* n (fact (- n 1))))))")
+	r3 := fact(Int(100))
+	expected3 := "93326215443944102188325606108575267240944254854960571509166910400407995064242937148632694030450512898042989296944474898258737204311236641477561877016501813248.0"
+	if fmt.Sprintf("%.1f", r3) != expected3 {
+		t.Errorf("Unexpected r3: %v", r3)
+	}
+
+	zip2 := Lambda("(lambda (slice_1 slice_2) (map list slice_1 slice_2))")
+	a := List{0, 1, 2}
+	b := List{"str", true}
+	r2 := zip2(a, b)
+	expected2 := List{List{0, "str"}, List{1, true}, List{2, nil}}
+	if !reflect.DeepEqual(r2, expected2) {
+		t.Errorf("Unexpected r2: %v", r2)
+	}
+}
+
+func Benchmark_Lambda(b *testing.B) {
+	fact := Lambda("(define fact (lambda (n) (if (<= n 1) 1.0 (* n (fact (- n 1))))))")
+	for i := 0; i < b.N; i++ {
+		fact(Int(100))
 	}
 }

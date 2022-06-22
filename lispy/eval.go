@@ -33,11 +33,15 @@ func (env *Env) eval_if(expr ...Any) Any {
 
 	v := env.Eval(test)
 
+	var r Any
+
 	if if_test(v) {
-		return conseq
+		r = conseq
 	} else {
-		return alt
+		r = alt
 	}
+
+	return env.Eval(r)
 }
 
 func (env *Env) eval_define(expr ...Any) Any {
@@ -57,7 +61,7 @@ func (env *Env) eval_define(expr ...Any) Any {
 		panic("Invalid define name argument")
 	}
 
-	return nil
+	return value
 }
 
 func (env *Env) eval_set(expr ...Any) Any {
@@ -77,7 +81,7 @@ func (env *Env) eval_set(expr ...Any) Any {
 		panic("Invalid set! name argument")
 	}
 
-	return nil
+	return value
 }
 
 func lambda_args(vars Any) []Symbol {
@@ -183,5 +187,5 @@ func (env *Env) Eval(expr Any) Any {
 }
 
 func Lambda(s string) PureFunction {
-	return to_function(StdEnv().Eval(NewParser(s).ParseList()))
+	return to_function(StdEnv().Eval(ParseExpr(s)))
 }
