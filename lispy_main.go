@@ -20,8 +20,8 @@ type Builtin string
 type Any interface{}
 type List []Any
 
-type PureFunction = func(List) Any
-type EnvFunction = func(*Env, List) Any
+type PureFunction = func(...Any) Any
+type EnvFunction = func(*Env, ...Any) Any
 
 func to_symbol(s Any) Symbol {
 	switch v := s.(type) {
@@ -153,7 +153,7 @@ func if_test(value Any) bool {
 	}
 }
 
-func (env *Env) eval_if(expr List) Any {
+func (env *Env) eval_if(expr ...Any) Any {
 	//TODO: verify number of args on parsing stage
 	if len(expr) != 4 {
 		panic("'if' statement requires exactly 3 arguments (if test conseq alt), while provided: " + lispstr(expr))
@@ -171,7 +171,7 @@ func (env *Env) eval_if(expr List) Any {
 	}
 }
 
-func (env *Env) eval_define(expr List) Any {
+func (env *Env) eval_define(expr ...Any) Any {
 	//TODO: verify number of args on parsing stage
 	if len(expr) != 3 {
 		panic("'define' statement requires exactly 2 arguments (define name exp), while provided: " + lispstr(expr))
@@ -191,7 +191,7 @@ func (env *Env) eval_define(expr List) Any {
 	return nil
 }
 
-func (env *Env) eval_set(expr List) Any {
+func (env *Env) eval_set(expr ...Any) Any {
 	//TODO: verify number of args on parsing stage
 	if len(expr) != 3 {
 		panic("'set!' statement requires exactly 2 arguments (set! name exp), while provided: " + lispstr(expr))
@@ -223,7 +223,7 @@ func lambda_args(vars Any) []Symbol {
 	return a
 }
 
-func (env *Env) eval_lambda(expr List) Any {
+func (env *Env) eval_lambda(expr ...Any) Any {
 	//TODO: verify number of args on parsing stage
 	if len(expr) != 3 {
 		panic("'lambda' statement requires exactly 2 arguments (lambda (vars...) body), while provided: " + lispstr(expr))
@@ -242,7 +242,7 @@ func (env *Env) eval_lambda(expr List) Any {
 	}
 }
 
-func eval_quote(expr List) Any {
+func eval_quote(expr ...Any) Any {
 	if len(expr) != 2 {
 		panic("'quote' statement requires exactly 1 argument (quote exp), while provided: " + lispstr(expr))
 	}
@@ -263,23 +263,23 @@ func (env *Env) eval_builtin(s Builtin, expr List) Any {
 	switch s { //TODO: is there any benefit of using map[Symbol]EnvFunction ?
 	case "quote":
 		//TODO: unquote????
-		return eval_quote(expr)
+		return eval_quote(expr...)
 	case "if":
-		return env.eval_if(expr)
+		return env.eval_if(expr...)
 	case "define":
 		//TODO: what define should return ?
-		return env.eval_define(expr)
+		return env.eval_define(expr...)
 	case "set!":
 		//TODO: what set! should return ?
-		return env.eval_set(expr)
+		return env.eval_set(expr...)
 	case "lambda":
-		return env.eval_lambda(expr)
+		return env.eval_lambda(expr...)
 	default:
 		panic("Unknown builtin")
 	}
 }
 
-func (env *Env) eval_args(args List) List {
+func (env *Env) eval_args(args ...Any) List {
 	r := make(List, 0)
 	for _, elem := range args {
 		r = append(r, env.eval(elem))
@@ -292,8 +292,8 @@ func (env *Env) eval_expr(expr List) Any {
 	tail := expr[1:]
 	f_value := env.eval(head)
 	f := to_function(f_value)
-	args := env.eval_args(tail)
-	return f(args)
+	args := env.eval_args(tail...)
+	return f(args...)
 }
 
 func (env *Env) eval_list(expr List) Any {
@@ -323,19 +323,15 @@ func (env *Env) eval(expr Any) Any {
 	}
 }
 
-func car(args List) Any {
-	l := to_list(args[0])
-	if len(l) == 0 {
-		return nil
-	}
-	return l[0]
+func car(arg ...Any) Any {
+	return to_list(arg[0])[0]
 }
 
-func cdr(args List) Any {
+func cdr(args ...Any) Any {
 	return to_list(args[0])[1:]
 }
 
-func cons(args List) Any {
+func cons(args ...Any) Any {
 	if len(args) != 2 {
 		panic("'cons' function requires exactly 2 arguments (const head exp), while provided: " + lispstr(args))
 	}
@@ -348,11 +344,11 @@ func cons(args List) Any {
 	return r
 }
 
-func list(args List) Any {
-	return args
+func list(args ...Any) Any {
+	return List(args)
 }
 
-func fold_nums(args List, init Any, name string, f_i func(Int, Int) Int, f_f func(Float, Float) Float) Any {
+func fold_nums(name string, f_i func(Int, Int) Int, f_f func(Float, Float) Float, init Any, args ...Any) Any {
 	var acc Any
 	acc = init
 	//TODO: type switch for multiple args
@@ -384,7 +380,7 @@ func fold_nums(args List, init Any, name string, f_i func(Int, Int) Int, f_f fun
 	return acc
 }
 
-func numeric_2_args(args List, name string, f_i func(Int, Int) Int, f_f func(Float, Float) Float) Any {
+func numeric_2_args(name string, f_i func(Int, Int) Int, f_f func(Float, Float) Float, args ...Any) Any {
 	if len(args) != 2 {
 		panic("'" + name + "' requires exactly 2 arguments, provided: " + lispstr(args))
 	}
@@ -416,31 +412,39 @@ func numeric_2_args(args List, name string, f_i func(Int, Int) Int, f_f func(Flo
 	}
 }
 
-func sum(args List) Any {
-	return fold_nums(args, Int(0), "+",
+func sum(args ...Any) Any {
+	return fold_nums("+",
 		func(a Int, b Int) Int { return a + b },
-		func(a Float, b Float) Float { return a + b })
+		func(a Float, b Float) Float { return a + b },
+		Int(0), args...,
+	)
 }
 
-func sub(args List) Any {
-	return numeric_2_args(args, "-",
+func sub(args ...Any) Any {
+	return numeric_2_args("-",
 		func(a Int, b Int) Int { return a - b },
-		func(a Float, b Float) Float { return a - b })
+		func(a Float, b Float) Float { return a - b },
+		args...,
+	)
 }
 
-func prod(args List) Any {
-	return fold_nums(args, Int(1), "*",
+func prod(args ...Any) Any {
+	return fold_nums("*",
 		func(a Int, b Int) Int { return a * b },
-		func(a Float, b Float) Float { return a * b })
+		func(a Float, b Float) Float { return a * b },
+		Int(1), args...,
+	)
 }
 
-func div(args List) Any {
-	return numeric_2_args(args, "/",
+func div(args ...Any) Any {
+	return numeric_2_args("/",
 		func(a Int, b Int) Int { return a / b },
-		func(a Float, b Float) Float { return a / b })
+		func(a Float, b Float) Float { return a / b },
+		args...,
+	)
 }
 
-func numeric_2_floats(args List, name string, f func(Float, Float) Any) Any {
+func numeric_2_floats(name string, f func(Float, Float) Any, args ...Any) Any {
 	if len(args) != 2 {
 		panic("'" + name + "' requires exactly 2 arguments, provided: " + lispstr(args))
 	}
@@ -472,20 +476,20 @@ func numeric_2_floats(args List, name string, f func(Float, Float) Any) Any {
 	}
 }
 
-func gt(args List) Any {
-	return numeric_2_floats(args, ">", func(a Float, b Float) Any { return Bool(a > b) })
+func gt(args ...Any) Any {
+	return numeric_2_floats(">", func(a Float, b Float) Any { return Bool(a > b) }, args...)
 }
 
-func lt(args List) Any {
-	return numeric_2_floats(args, ">", func(a Float, b Float) Any { return Bool(a < b) })
+func lt(args ...Any) Any {
+	return numeric_2_floats(">", func(a Float, b Float) Any { return Bool(a < b) }, args...)
 }
 
-func ge(args List) Any {
-	return numeric_2_floats(args, ">", func(a Float, b Float) Any { return Bool(a >= b) })
+func ge(args ...Any) Any {
+	return numeric_2_floats(">", func(a Float, b Float) Any { return Bool(a >= b) }, args...)
 }
 
-func le(args List) Any {
-	return numeric_2_floats(args, ">", func(a Float, b Float) Any { return Bool(a <= b) })
+func le(args ...Any) Any {
+	return numeric_2_floats(">", func(a Float, b Float) Any { return Bool(a <= b) }, args...)
 }
 
 func list_cmp(a List, b List) Bool {
@@ -516,39 +520,37 @@ func equal(a Any, b Any) Bool {
 	}
 }
 
-func eq(args List) Any {
+func eq(args ...Any) Any {
 	if len(args) != 2 {
 		panic("equality requires exactly 2 arguments, provided: " + lispstr(args))
 	}
 
-	lhs := args[0]
-	rhs := args[1]
-
-	return equal(lhs, rhs)
+	return equal(args[0], args[1])
 }
 
 func standard_env() *Env {
 	env := Env{}
 
 	env.named_objects = map[Symbol]Any{
-		"car":    car,
-		"cdr":    cdr,
-		"cons":   cons,
-		"list":   list,
-		"+":      sum,
-		"-":      sub,
-		"*":      prod,
-		"/":      div,
-		">":      gt,
-		"<":      lt,
-		">=":     ge,
-		"<=":     le,
-		"=":      eq,
-		"begin":  func(args List) Any { return args[len(args)-1] },
+		"car":  car,
+		"cdr":  cdr,
+		"cons": cons,
+		"list": list,
+		"+":    sum,
+		"-":    sub,
+		"*":    prod,
+		"/":    div,
+		">":    gt,
+		"<":    lt,
+		">=":   ge,
+		"<=":   le,
+		"=":    eq,
+		//TODO: common way to check the number of args and their types
+		"begin":  func(args ...Any) Any { return args[len(args)-1] },
 		"pi":     Float(math.Pi),
-		"eq?":    func(args List) Any { return Bool(args[0] == args[1]) },
+		"eq?":    func(args ...Any) Any { return Bool(args[0] == args[1]) },
 		"equal?": eq,
-		"length": func(args List) Any { return Int(len(to_list(args[0]))) },
+		"length": func(args ...Any) Any { return Int(len(to_list(args[0]))) },
 	}
 
 	return &env
