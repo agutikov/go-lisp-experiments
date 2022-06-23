@@ -1,6 +1,9 @@
 /* Lexical part */
 
+
 !whitespace : ' ' | '\t' | '\n' | '\r' ;
+
+!comment : ';' {.} '\n' ;
 
 
 _digit : '0'-'9' ;
@@ -31,6 +34,10 @@ quoted_string : '"' {_quotedpair | .} '"' ;
 
 << import "github.com/agutikov/go-lisp-experiments/lispy/syntax/ast" >>
 
+Sequence : Sexpr                << ast.NewSequence($0) >>
+         | Sexpr Sequence       << ast.Cons($0, $1) >>
+         ;
+
 Sexpr : Atom      << ast.NewSexpr($0) >>
       | List      << ast.NewSexpr($0) >>
       ;
@@ -38,10 +45,6 @@ Sexpr : Atom      << ast.NewSexpr($0) >>
 List : "(" Sequence ")"  << ast.NewList($1) >>
      | "(" ")"           << ast.NewList(nil) >>
      ;
-
-Sequence : Sexpr                << ast.NewSequence($0) >>
-         | Sexpr Sequence       << ast.Cons($0, $1) >>
-         ;
 
 Atom : atomic_symbol      << ast.NewSymbol($0) >>
      | decimal_number     << ast.NewNumber($0) >>

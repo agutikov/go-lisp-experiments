@@ -9,14 +9,14 @@ import (
 	"github.com/agutikov/go-lisp-experiments/lispy/syntax/parser"
 )
 
-type ParserTestItem struct {
+type ParserTestSexpr struct {
 	input  string
 	output ast.Sexpr
 }
 
 func Test_Sexpr(t *testing.T) {
 
-	tests := []ParserTestItem{
+	tests := []ParserTestSexpr{
 		{"str", ast.Symbol{"str"}},
 		{"()", ast.List{}},
 		{"( ( ) ( ) )", ast.List{[]ast.Sexpr{ast.List{}, ast.List{}}}},
@@ -40,7 +40,8 @@ func Test_Sexpr(t *testing.T) {
 	p := parser.NewParser()
 
 	for _, test := range tests {
-		t.Logf("%q, expected: %#v", test.input, test.output)
+		expected := ast.Sequence{[]ast.Sexpr{test.output}}
+		t.Logf("%q, expected: %#v", test.input, expected)
 
 		lex := lexer.NewLexer([]byte(test.input))
 		st, err := p.Parse(lex)
@@ -55,7 +56,47 @@ func Test_Sexpr(t *testing.T) {
 		if !ok {
 			t.Fatalf("This is not a Sexpr")
 		}
-		if !reflect.DeepEqual(s, test.output) {
+		if !reflect.DeepEqual(s, expected) {
+			t.Fatalf("Wrong Sexpr %#v", s)
+		}
+	}
+}
+
+type ParserTestSeq struct {
+	input  string
+	output ast.Sequence
+}
+
+func Test_Sequence(t *testing.T) {
+	tests := []ParserTestSeq{
+		{"a", ast.Sequence{[]ast.Sexpr{ast.Symbol{"a"}}}},
+		{"() ; comment\n", ast.Sequence{[]ast.Sexpr{ast.List{}}}},
+		{";; line 1\n () ; line 2\n", ast.Sequence{[]ast.Sexpr{ast.List{}}}},
+		{"() ; ()\n", ast.Sequence{[]ast.Sexpr{ast.List{}}}},
+
+		{"\";\"", ast.Sequence{[]ast.Sexpr{ast.Str{";"}}}},
+	}
+
+	p := parser.NewParser()
+
+	for _, test := range tests {
+		expected := test.output
+		t.Logf("%q, expected: %#v", test.input, expected)
+
+		lex := lexer.NewLexer([]byte(test.input))
+		st, err := p.Parse(lex)
+		if err != nil {
+			panic(err)
+		}
+
+		s, ok := st.(ast.Sexpr)
+
+		t.Logf("    -> %#v", s)
+
+		if !ok {
+			t.Fatalf("This is not a Sexpr")
+		}
+		if !reflect.DeepEqual(s, expected) {
 			t.Fatalf("Wrong Sexpr %#v", s)
 		}
 	}
