@@ -1,6 +1,6 @@
 
 
 all:
-	$(MAKE) -C ./parser
+	$(MAKE) -C ./syntax
 	go build
 
