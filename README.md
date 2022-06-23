@@ -25,6 +25,10 @@ It is not so compact as original *lis.py*, but a little bit faster: go-lispy com
 ## HOWTO
 
 ```sh
+# dependencies
+$ go get github.com/goccmack/gocc
+$ go install github.com/goccmack/gocc
+
 # compile
 $ cd go-lisp-experiments/
 $ make
