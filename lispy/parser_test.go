@@ -28,11 +28,11 @@ func Test_ParserReverse(t *testing.T) {
 	exprs := []Any{
 		nil,
 		List{},
-		Int(0),
+		FromInt(0),
 		Bool(true),
 		Bool(false),
-		List{nil, Int(1), List{}, List{Int(1), Bool(false)}, Bool(true)},
-		List{Builtin("if"), Symbol("x"), Int(1), Int(0)},
+		List{nil, FromInt(1), List{}, List{FromInt(1), Bool(false)}, Bool(true)},
+		List{Builtin("if"), Symbol("x"), FromInt(1), FromInt(0)},
 	}
 	for _, expr := range exprs {
 		s := LispyStr(expr)

@@ -12,7 +12,7 @@ type Atom struct {
 	Value string
 }
 
-type Sexpr struct {
+type List struct {
 	List []Atom
 }
 
@@ -24,12 +24,12 @@ func (this *Atom) String() string {
 	return this.Value
 }
 
-func NewSexpr(head Attrib, tail Attrib) (*Sexpr, error) {
+func NewList(head Attrib, tail Attrib) (*List, error) {
 	atom := tail.(*Atom)
 	if head == nil {
-		return &Sexpr{List: []Atom{*atom}}, nil
+		return &List{List: []Atom{*atom}}, nil
 	}
-	s := head.(*Sexpr)
+	s := head.(*List)
 	s.List = append(s.List, *atom)
 	return s, nil
 }
@@ -42,6 +42,6 @@ func Map[From any, To any](f func(From) To, args []From) []To {
 	return r
 }
 
-func (this *Sexpr) String() string {
+func (this *List) String() string {
 	return strings.Join(Map(func(a Atom) string { return a.String() }, this.List), " ")
 }

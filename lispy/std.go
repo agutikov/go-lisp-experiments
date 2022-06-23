@@ -2,6 +2,7 @@ package lispy
 
 import (
 	"math"
+	"math/big"
 )
 
 func car(arg ...Any) Any {
@@ -50,14 +51,14 @@ func fold_nums(name string, f_i func(Int, Int) Int, f_f func(Float, Float) Float
 			case Int:
 				acc = f_i(a, v)
 			case Float:
-				acc = f_f(Float(a), v)
+				acc = f_f(int_to_float(a), v)
 			default:
 				panic("Invalid '" + name + "' argument: " + LispyStr(args))
 			}
 		case Float:
 			switch v := item.(type) {
 			case Int:
-				acc = f_f(a, Float(v))
+				acc = f_f(a, int_to_float(v))
 			case Float:
 				acc = f_f(a, v)
 			default:
@@ -85,14 +86,14 @@ func numeric_2_args(name string, f_i func(Int, Int) Int, f_f func(Float, Float) 
 		case Int:
 			return f_i(x, y)
 		case Float:
-			return f_f(Float(x), y)
+			return f_f(int_to_float(x), y)
 		default:
 			panic("Invalid '" + name + "' argument: " + LispyStr(args))
 		}
 	case Float:
 		switch y := rhs.(type) {
 		case Int:
-			return f_f(x, Float(y))
+			return f_f(x, int_to_float(y))
 		case Float:
 			return f_f(x, y)
 		default:
@@ -103,20 +104,32 @@ func numeric_2_args(name string, f_i func(Int, Int) Int, f_f func(Float, Float) 
 	}
 }
 
+//TODO: Number type that holds the big.Int or big.Rat or anything else and converts it if necessary
+
 func sum(args ...Any) Any {
 	return fold_nums("+",
-		func(a Int, b Int) Int { return a + b },
-		func(a Float, b Float) Float { return a + b },
-		Int(0), args...,
+		func(a Int, b Int) Int {
+			r := Int{big.NewInt(0)}
+			r.v = r.v.Add(a.v, b.v)
+			return r
+		},
+		func(a Float, b Float) Float {
+			r := Float{big.NewFloat(0)}
+			r.v = r.v.Add(a.v, b.v)
+			return r
+		},
+		Int{big.NewInt(0)}, args...,
 	)
 }
 
 func minus(arg Any) Any {
 	switch x := arg.(type) {
 	case Int:
-		return Int(-int64(x))
+		z := big.NewInt(0)
+		return Int{z.Neg(x.v)}
 	case Float:
-		return Float(-float64(x))
+		z := big.NewFloat(0)
+		return Float{z.Neg(x.v)}
 	default:
 		panic("Invalid unary '-' argument: " + LispyStr(arg))
 	}
@@ -127,24 +140,43 @@ func sub(args ...Any) Any {
 		return minus(args[0])
 	}
 	return numeric_2_args("-",
-		func(a Int, b Int) Int { return a - b },
-		func(a Float, b Float) Float { return a - b },
+		func(a Int, b Int) Int {
+			r := Int{big.NewInt(0)}
+			r.v = r.v.Sub(a.v, b.v)
+			return r
+		},
+		func(a Float, b Float) Float {
+			r := Float{big.NewFloat(0)}
+			r.v = r.v.Sub(a.v, b.v)
+			return r
+		},
 		args...,
 	)
 }
 
 func prod(args ...Any) Any {
 	return fold_nums("*",
-		func(a Int, b Int) Int { return a * b },
-		func(a Float, b Float) Float { return a * b },
-		Int(1), args...,
+		func(a Int, b Int) Int {
+			r := Int{big.NewInt(0)}
+			r.v = r.v.Mul(a.v, b.v)
+			return r
+		},
+		func(a Float, b Float) Float {
+			r := Float{big.NewFloat(0)}
+			r.v = r.v.Mul(a.v, b.v)
+			return r
+		},
+		Int{big.NewInt(1)}, args...,
 	)
 }
 
 func div(args ...Any) Any {
-	return numeric_2_args("/",
-		func(a Int, b Int) Int { return a / b },
-		func(a Float, b Float) Float { return a / b },
+	return numeric_2_floats("/",
+		func(a Float, b Float) Any {
+			r := Float{big.NewFloat(0)}
+			r.v = r.v.Quo(a.v, b.v)
+			return r
+		},
 		args...,
 	)
 }
@@ -161,16 +193,16 @@ func numeric_2_floats(name string, f func(Float, Float) Any, args ...Any) Any {
 	case Int:
 		switch y := rhs.(type) {
 		case Int:
-			return f(Float(x), Float(y))
+			return f(int_to_float(x), int_to_float(y))
 		case Float:
-			return f(Float(x), y)
+			return f(int_to_float(x), y)
 		default:
 			panic("Invalid '" + name + "' argument: " + LispyStr(args))
 		}
 	case Float:
 		switch y := rhs.(type) {
 		case Int:
-			return f(x, Float(y))
+			return f(x, int_to_float(y))
 		case Float:
 			return f(x, y)
 		default:
@@ -182,19 +214,19 @@ func numeric_2_floats(name string, f func(Float, Float) Any, args ...Any) Any {
 }
 
 func gt(args ...Any) Any {
-	return numeric_2_floats(">", func(a Float, b Float) Any { return Bool(a > b) }, args...)
+	return numeric_2_floats(">", func(a Float, b Float) Any { return Bool(a.v.Cmp(b.v) > 0) }, args...)
 }
 
 func lt(args ...Any) Any {
-	return numeric_2_floats(">", func(a Float, b Float) Any { return Bool(a < b) }, args...)
+	return numeric_2_floats(">", func(a Float, b Float) Any { return Bool(a.v.Cmp(b.v) < 0) }, args...)
 }
 
 func ge(args ...Any) Any {
-	return numeric_2_floats(">", func(a Float, b Float) Any { return Bool(a >= b) }, args...)
+	return numeric_2_floats(">", func(a Float, b Float) Any { return Bool(a.v.Cmp(b.v) >= 0) }, args...)
 }
 
 func le(args ...Any) Any {
-	return numeric_2_floats(">", func(a Float, b Float) Any { return Bool(a <= b) }, args...)
+	return numeric_2_floats(">", func(a Float, b Float) Any { return Bool(a.v.Cmp(b.v) <= 0) }, args...)
 }
 
 func list_cmp(a List, b List) Bool {
@@ -217,6 +249,20 @@ func equal(a Any, b Any) Bool {
 		switch y := b.(type) {
 		case List:
 			return list_cmp(x, y)
+		default:
+			return Bool(false)
+		}
+	case Int:
+		switch y := b.(type) {
+		case Int:
+			return x.v.Cmp(y.v) == 0
+		default:
+			return Bool(false)
+		}
+	case Float:
+		switch y := b.(type) {
+		case Float:
+			return x.v.Cmp(y.v) == 0
 		default:
 			return Bool(false)
 		}
@@ -330,10 +376,10 @@ func StdEnv() *Env {
 		"=":    eq,
 		//TODO: common way to check the number of args and the types
 		"begin":  func(args ...Any) Any { return args[len(args)-1] },
-		"pi":     Float(math.Pi),
+		"pi":     Float{big.NewFloat(math.Pi)},
 		"eq?":    func(args ...Any) Any { return Bool(args[0] == args[1]) },
 		"equal?": eq,
-		"length": func(args ...Any) Any { return Int(len(to_list(args[0]))) },
+		"length": func(args ...Any) Any { return Int{big.NewInt(int64(len(to_list(args[0]))))} },
 		"not":    func(args ...Any) Any { return Bool(!if_test(args[0])) },
 		"and":    func(args ...Any) Any { return fold_bools(func(x bool, y bool) bool { return x && y }, true, args...) },
 		"or":     func(args ...Any) Any { return fold_bools(func(x bool, y bool) bool { return x || y }, false, args...) },

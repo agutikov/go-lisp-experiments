@@ -2,13 +2,18 @@ package lispy
 
 import (
 	"fmt"
+	"math/big"
 	"reflect"
 )
 
 type Bool bool
-type Int int64
+type Int struct {
+	v *big.Int
+}
 type Str string
-type Float float64
+type Float struct {
+	v *big.Float
+}
 
 type Symbol string
 type Builtin string
@@ -16,6 +21,20 @@ type Any interface{}
 type List []Any
 
 type PureFunction = func(...Any) Any
+
+func FromInt(v int) Int {
+	return Int{big.NewInt(int64(v))}
+}
+
+func FromFloat(v float64) Float {
+	return Float{big.NewFloat(v)}
+}
+
+func int_to_float(v Int) Float {
+	r := new(big.Float)
+	r.SetInt(v.v)
+	return Float{r}
+}
 
 func to_symbol(s Any) Symbol {
 	switch v := s.(type) {
@@ -44,6 +63,26 @@ func to_function(s Any) PureFunction {
 	}
 }
 
+func if_test(value Any) bool {
+	if value == nil {
+		return false
+	}
+	switch v := value.(type) {
+	case Bool:
+		return bool(v)
+	case List:
+		return len(v) > 0
+	case Int:
+		return v.v.Sign() != 0
+	case Str:
+		return len(v) > 0
+	case Float:
+		return v.v.Sign() != 0
+	default:
+		return true
+	}
+}
+
 func LispyStr(expr Any) string {
 	if expr == nil {
 		return "nil"
@@ -54,9 +93,9 @@ func LispyStr(expr Any) string {
 	case Symbol:
 		return string(v)
 	case Int:
-		return fmt.Sprintf("%d", v)
+		return v.v.String()
 	case Float:
-		return fmt.Sprintf("%f", v)
+		return v.v.String()
 	case Str:
 		return "\"" + string(v) + "\""
 	case Bool:

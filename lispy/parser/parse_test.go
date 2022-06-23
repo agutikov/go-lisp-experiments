@@ -1,11 +1,12 @@
 package parser
 
 import (
+	"reflect"
+	"testing"
+
 	"github.com/agutikov/go-lisp-experiments/lispy/parser/ast"
 	"github.com/agutikov/go-lisp-experiments/lispy/parser/lexer"
 	"github.com/agutikov/go-lisp-experiments/lispy/parser/parser"
-	"reflect"
-	"testing"
 )
 
 func Test_Sexpr(t *testing.T) {
@@ -16,7 +17,7 @@ func Test_Sexpr(t *testing.T) {
 	if err != nil {
 		panic(err)
 	}
-	w, ok := st.(*ast.Sexpr)
+	w, ok := st.(*ast.List)
 	if !ok {
 		t.Fatalf("This is not a Sexpr")
 	}

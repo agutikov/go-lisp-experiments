@@ -1,7 +1,6 @@
 package lispy
 
 import (
-	"fmt"
 	"reflect"
 	"testing"
 )
@@ -10,7 +9,7 @@ func Test_Eval(t *testing.T) {
 	examples := [][]Any{
 		{nil, nil},
 		{List{}, List{}},
-		{List{Builtin("quote"), List{Symbol("xxx"), Int(1)}}, List{Symbol("xxx"), Int(1)}},
+		{List{Builtin("quote"), List{Symbol("xxx"), FromInt(1)}}, List{Symbol("xxx"), FromInt(1)}},
 	}
 	for _, test := range examples {
 		expected := test[1]
@@ -104,17 +103,17 @@ func Test_EvalStr(t *testing.T) {
 
 func Test_lambda(t *testing.T) {
 	f1 := Lambda("(lambda (x y) (/ (* x x) (* y y)))")
-	r1 := f1(Int(2), Float(4))
-	if r1 != Float(0.25) {
-		t.Errorf("Unexpected r1: %v", r1)
+	r1 := f1(FromInt(2), FromFloat(4))
+	if !equal(r1, FromFloat(0.25)) {
+		t.Errorf("Unexpected r1: %q", LispyStr(r1))
 	}
 
 	// from README.md
-	fact := Lambda("(define fact (lambda (n) (if (<= n 1) 1.0 (* n (fact (- n 1))))))")
-	r3 := fact(Int(100))
-	expected3 := "93326215443944102188325606108575267240944254854960571509166910400407995064242937148632694030450512898042989296944474898258737204311236641477561877016501813248.0"
-	if fmt.Sprintf("%.1f", r3) != expected3 {
-		t.Errorf("Unexpected r3: %v", r3)
+	fact := Lambda("(define fact (lambda (n) (if (<= n 1) 1 (* n (fact (- n 1))))))")
+	r3 := fact(FromInt(100))
+	expected3 := "93326215443944152681699238856266700490715968264381621468592963895217599993229915608941463976156518286253697920827223758251185210916864000000000000000000000000"
+	if LispyStr(r3) != expected3 {
+		t.Errorf("Unexpected r3: %q", LispyStr(r3))
 	}
 
 	zip2 := Lambda("(lambda (slice_1 slice_2) (map list slice_1 slice_2))")
@@ -123,13 +122,13 @@ func Test_lambda(t *testing.T) {
 	r2 := zip2(a, b)
 	expected2 := List{List{0, "str"}, List{1, true}, List{2, nil}}
 	if !reflect.DeepEqual(r2, expected2) {
-		t.Errorf("Unexpected r2: %v", r2)
+		t.Errorf("Unexpected r2: %q", LispyStr(r2))
 	}
 }
 
 func Benchmark_Lambda(b *testing.B) {
-	fact := Lambda("(define fact (lambda (n) (if (<= n 1) 1.0 (* n (fact (- n 1))))))")
+	fact := Lambda("(define fact (lambda (n) (if (<= n 1) 1 (* n (fact (- n 1))))))")
 	for i := 0; i < b.N; i++ {
-		fact(Int(100))
+		fact(FromInt(100))
 	}
 }

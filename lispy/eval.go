@@ -1,27 +1,5 @@
 package lispy
 
-func if_test(value Any) bool {
-	//TODO: not sure about conversion of other types to bool
-	// maybe everything except nil and false is true
-	if value == nil {
-		return false
-	}
-	switch v := value.(type) {
-	case Bool:
-		return bool(v)
-	case List:
-		return len(v) > 0
-	case Int:
-		return int(v) != 0
-	case Str:
-		return len(v) > 0
-	case Float:
-		return float64(v) != 0.0
-	default:
-		panic("Non-data if test argument")
-	}
-}
-
 func (env *Env) eval_if(expr ...Any) Any {
 	//TODO: verify number of args on parsing stage
 	if len(expr) != 4 {

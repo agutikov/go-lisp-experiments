@@ -1,7 +1,7 @@
 package lispy
 
 import (
-	"strconv"
+	"math/big"
 	"strings"
 )
 
@@ -38,14 +38,18 @@ func (p *Parser) parse_atom(token string) Any {
 		return v
 	}
 
-	int_val, err := strconv.Atoi(token)
-	if err == nil {
-		return Int(int_val)
+	n := new(big.Int)
+	n, ok := n.SetString(token, 10)
+
+	if ok {
+		return Int{n}
 	}
 
-	float_val, err := strconv.ParseFloat(token, 64)
-	if err == nil {
-		return Float(float_val)
+	f := new(big.Float)
+	f, ok = f.SetString(token)
+
+	if ok {
+		return Float{f}
 	}
 
 	//TODO: strings - with parser generator

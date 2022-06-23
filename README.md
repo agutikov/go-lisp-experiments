@@ -19,6 +19,8 @@ Go-lispy is a subset of Sheme, with following implemented:
 
 Go-lispy implements lists with slices - so there is no dotted pairs like in classic Lisp.
 
+It is not so compact as original *lis.py*, but a little bit faster: go-lispy computes (fact 100) in 0.6ms, while original *lis.py* takes 3ms.
+
 
 ## HOWTO
 
@@ -69,13 +71,12 @@ func main() {
 
 ```Go
 // Get an executable from lambda expression
-// NOTE: that go-lispy doesn't have long integers - so result would be float
-fact := lispy.Lambda("(define fact (lambda (n) (if (<= n 1) 1.0 (* n (fact (- n 1))))))")
+fact := lispy.Lambda("(define fact (lambda (n) (if (<= n 1) 1 (* n (fact (- n 1))))))")
 
 // Call the function
 // NOTE: if go-lispy interpreter interacts with values - then lispy types should be used
-v := fact(lispy.Int(100))
-fmt.Println(v)
+v := fact(lispy.FromInt(100))
+fmt.Println(LispyStr(v))
 
 // If go-lispy interpreter will not interact with values - then any types could be used
 zip2 := lispy.Lambda("(lambda (slice_1 slice_2) (map list slice_1 slice_2))")
@@ -91,9 +92,9 @@ fmt.Println(r)
 # What I've learned about Lisp
 
 1. Syntactic form differs from procedure call in a way that different syntactic forms can eval or not eval some of it's arguments, while procedure call (as a syntactic form itself) eval all arguments before calling the procedure.
-   1. procedure call - eval all args before call;
-   2. quote - does not eval any arg;
-   3. define - does not eval first, eval second;
-   4. set! - same as define;
-   5. if - eval first, and then eval one of second or third;
-   6. lambda - does not eval any of two, but will eval body when been called, or can eval body partially, or behave any different way;
+For example:
+  - procedure call - eval all args before call;
+  - quote - does not eval any arg;
+  - define and set! - does not eval first, eval second;
+  - if - eval first, and then eval one of second or third;
+  - lambda - does not eval any of two, but will eval body when been called, or can eval body partially, or behave any different way;
