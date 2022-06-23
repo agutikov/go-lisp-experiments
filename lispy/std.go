@@ -114,7 +114,7 @@ func sum(args ...Any) Any {
 			return r
 		},
 		func(a Float, b Float) Float {
-			r := Float{big.NewFloat(0)}
+			r := FromFloat(0)
 			r.v = r.v.Add(a.v, b.v)
 			return r
 		},
@@ -128,7 +128,7 @@ func minus(arg Any) Any {
 		z := big.NewInt(0)
 		return Int{z.Neg(x.v)}
 	case Float:
-		z := big.NewFloat(0)
+		z := big.NewRat(0, 1)
 		return Float{z.Neg(x.v)}
 	default:
 		panic("Invalid unary '-' argument: " + LispyStr(arg))
@@ -146,7 +146,7 @@ func sub(args ...Any) Any {
 			return r
 		},
 		func(a Float, b Float) Float {
-			r := Float{big.NewFloat(0)}
+			r := FromFloat(0)
 			r.v = r.v.Sub(a.v, b.v)
 			return r
 		},
@@ -162,7 +162,7 @@ func prod(args ...Any) Any {
 			return r
 		},
 		func(a Float, b Float) Float {
-			r := Float{big.NewFloat(0)}
+			r := FromFloat(0)
 			r.v = r.v.Mul(a.v, b.v)
 			return r
 		},
@@ -173,7 +173,7 @@ func prod(args ...Any) Any {
 func div(args ...Any) Any {
 	return numeric_2_floats("/",
 		func(a Float, b Float) Any {
-			r := Float{big.NewFloat(0)}
+			r := FromFloat(0)
 			r.v = r.v.Quo(a.v, b.v)
 			return r
 		},
@@ -376,7 +376,7 @@ func StdEnv() *Env {
 		"=":    eq,
 		//TODO: common way to check the number of args and the types
 		"begin":  func(args ...Any) Any { return args[len(args)-1] },
-		"pi":     Float{big.NewFloat(math.Pi)},
+		"pi":     FromFloat(math.Pi),
 		"eq?":    func(args ...Any) Any { return Bool(args[0] == args[1]) },
 		"equal?": eq,
 		"length": func(args ...Any) Any { return Int{big.NewInt(int64(len(to_list(args[0]))))} },

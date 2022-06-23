@@ -12,7 +12,7 @@ type Int struct {
 }
 type Str string
 type Float struct {
-	v *big.Float
+	v *big.Rat
 }
 
 type Symbol string
@@ -27,11 +27,13 @@ func FromInt(v int) Int {
 }
 
 func FromFloat(v float64) Float {
-	return Float{big.NewFloat(v)}
+	f := new(big.Rat)
+	f.SetFloat64(v)
+	return Float{f}
 }
 
 func int_to_float(v Int) Float {
-	r := new(big.Float)
+	r := new(big.Rat)
 	r.SetInt(v.v)
 	return Float{r}
 }
@@ -95,7 +97,10 @@ func LispyStr(expr Any) string {
 	case Int:
 		return v.v.String()
 	case Float:
-		return v.v.String()
+		f := big.NewFloat(0)
+		f.SetPrec(0)
+		f.SetRat(v.v)
+		return f.Text('f', int(f.MinPrec())) //TODO: get precision from env
 	case Str:
 		return "\"" + string(v) + "\""
 	case Bool:

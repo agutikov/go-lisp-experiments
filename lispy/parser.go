@@ -45,7 +45,7 @@ func (p *Parser) parse_atom(token string) Any {
 		return Int{n}
 	}
 
-	f := new(big.Float)
+	f := new(big.Rat)
 	f, ok = f.SetString(token)
 
 	if ok {

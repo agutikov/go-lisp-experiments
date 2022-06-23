@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 	"strings"
-	"time"
 
 	"github.com/agutikov/go-lisp-experiments/lispy"
 )
@@ -17,12 +16,12 @@ func exec(env *lispy.Env, line string) {
 		}
 	}()
 
-	started := time.Now()
+	//started := time.Now()
 	expr := lispy.ParseExpr(line)
 	r := env.Eval(expr)
-	elapsed := time.Since(started)
+	//elapsed := time.Since(started)
 	fmt.Println(lispy.LispyStr(r))
-	fmt.Println(" elapsed:", elapsed)
+	//fmt.Println(" elapsed:", elapsed)
 }
 
 func repl() {
