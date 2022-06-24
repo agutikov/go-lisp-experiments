@@ -1,6 +1,6 @@
 # Experimenting with Lisp implementation in Go
 
-Basically this is [Peter Norvig's Lis.py](http://norvig.com/lispy.html) translated to Go.
+Basically this is [Peter Norvig's Lis.py](http://norvig.com/lispy.html) translated into Go.
 But with some limitations induced by the fact that Python is already a language with dynamic types,
 while in Go we need to implement dynamic typing manually.
 
@@ -20,6 +20,10 @@ Go-lispy is a subset of Sheme, with following implemented:
 Go-lispy implements lists with slices - so there is no dotted pairs like in classic Lisp.
 
 It is not so compact as original *lis.py*, but a little bit faster: go-lispy computes (fact 100) in 0.6ms, while original *lis.py* takes 3ms.
+
+Parsing is implemented with [Gocc](https://github.com/goccmack/gocc)
+
+Syntax definition: [lispy/syntax/lispy.bnf](lispy/syntax/lispy.bnf)
 
 
 ## HOWTO
