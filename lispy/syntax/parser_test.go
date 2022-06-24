@@ -56,7 +56,7 @@ func Test_Sexpr(t *testing.T) {
 			Body: ast.List{ast.Symbol{"-"}, ast.Symbol{"x"}},
 		}},
 
-		{"(if t f ())", ast.If{
+		{"(if t false ())", ast.If{
 			Test:      ast.Bool(true),
 			PosBranch: ast.Bool(false),
 			NegBranch: ast.List{},

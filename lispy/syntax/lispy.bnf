@@ -73,11 +73,12 @@ Atom : Symbol
      | Bool
      ;
 
-Bool : True | False
+Bool : True
+     | False
      ;
 
 True : "t"  << ast.Bool(true), nil >> ;
-False : "f" << ast.Bool(false), nil >> ;
+False : "false" << ast.Bool(false), nil >> ;
 
 Symbol : atomic_symbol      << ast.NewSymbol($0) >>
        ;

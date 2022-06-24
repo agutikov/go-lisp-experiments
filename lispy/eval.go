@@ -117,7 +117,9 @@ func (env *Env) eval_expr(expr Any) Any {
 	r := env._eval_expr(expr)
 
 	//env.Print()
-	//fmt.Printf("eval_expr():  %+v  ->  %+v \n", expr, r)
+	if if_test(env.symbol_lookup(ast.Symbol{"enable-trace"})) {
+		fmt.Printf("eval_expr():  %s  ->  %s \n", LispyStr(expr), LispyStr(r))
+	}
 	//fmt.Printf("eval_expr():  %#v  ->  %#v \n", expr, r)
 	return r
 }
@@ -128,7 +130,7 @@ func (env *Env) Eval(expr Any) Any {
 	r := quote_if_list(env.eval_expr(expr))
 
 	elapsed := time.Since(started)
-	if if_test(env.symbol_lookup(ast.Symbol{"print-elapsed"})) {
+	if if_test(env.symbol_lookup(ast.Symbol{"enable-print-elapsed"})) {
 		fmt.Println(" elapsed: ", elapsed)
 	}
 

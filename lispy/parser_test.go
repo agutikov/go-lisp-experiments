@@ -13,7 +13,7 @@ func Test_ParserDirect(t *testing.T) {
 		"()",
 		"0",
 		"t",
-		"f",
+		"false",
 		"(nil 1 () (1 2) t)",
 		"(define foo (+ (* x x) (* y y)))",
 	}

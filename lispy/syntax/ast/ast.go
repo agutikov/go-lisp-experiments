@@ -238,7 +238,7 @@ func (this Bool) String() string {
 	if bool(this) {
 		return "t"
 	} else {
-		return "f"
+		return "false"
 	}
 }
 

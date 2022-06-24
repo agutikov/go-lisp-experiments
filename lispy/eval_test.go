@@ -27,7 +27,7 @@ func Test_EvalStr(t *testing.T) {
 		{"(apply + 0 1 (list 2 3) 4)", "10"},
 		{"(or nil 0 () t)", "t"},
 		{"(cons nil nil)", "'(nil)"},
-		{"(and t 1 (cons nil nil) f)", "f"},
+		{"(and t 1 (cons nil nil) ())", "false"},
 	}
 	e := StdEnv()
 	for _, test := range examples {

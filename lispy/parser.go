@@ -6,11 +6,19 @@ import (
 	"github.com/agutikov/go-lisp-experiments/lispy/syntax/ast"
 	"github.com/agutikov/go-lisp-experiments/lispy/syntax/lexer"
 	"github.com/agutikov/go-lisp-experiments/lispy/syntax/parser"
+	"github.com/agutikov/go-lisp-experiments/lispy/syntax/token"
 )
 
 func pasrse_bytes(bytes []byte) ast.Sequence {
 	p := parser.NewParser()
 	lex := lexer.NewLexer(bytes)
+
+	if lex.Scan().Type == token.INVALID {
+		// no valid tokens - return empty sequence
+		return ast.Sequence{}
+	}
+	lex.Reset()
+
 	st, err := p.Parse(lex)
 	if err != nil {
 		panic(err)

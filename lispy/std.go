@@ -42,6 +42,14 @@ func fold_bools(f func(bool, bool) bool, init bool, args ...Any) Bool {
 	return Bool(acc)
 }
 
+func bool_to_int(b Bool) Int {
+	if bool(b) {
+		return ast.IntNum(1)
+	} else {
+		return ast.IntNum(0)
+	}
+}
+
 func fold_nums(name string, f_i func(Int, Int) Int, f_f func(Float, Float) Float, init Any, args ...Any) Any {
 	var acc Any
 	acc = init
@@ -50,6 +58,8 @@ func fold_nums(name string, f_i func(Int, Int) Int, f_f func(Float, Float) Float
 		switch a := acc.(type) {
 		case Int:
 			switch v := item.(type) {
+			case Bool:
+				acc = f_i(a, bool_to_int(v))
 			case Int:
 				acc = f_i(a, v)
 			case Float:
@@ -59,6 +69,8 @@ func fold_nums(name string, f_i func(Int, Int) Int, f_f func(Float, Float) Float
 			}
 		case Float:
 			switch v := item.(type) {
+			case Bool:
+				acc = f_f(a, int_to_float(bool_to_int(v)))
 			case Int:
 				acc = f_f(a, int_to_float(v))
 			case Float:
@@ -359,11 +371,54 @@ func apply(args ...Any) Any {
 	return f(a...)
 }
 
+func to_float(n Any) Float {
+	switch v := n.(type) {
+	case Float:
+		return v
+	case Int:
+		return int_to_float(v)
+	default:
+		panic("NAN: " + ast.String(n))
+	}
+}
+
+func Zero() *big.Rat {
+	r := big.NewRat(0, 1)
+	return r
+}
+
+func Mul(a, b *big.Rat) *big.Rat {
+	return Zero().Mul(a, b)
+}
+
+func Pow(a *big.Rat, e uint64) *big.Rat {
+	result := Zero().Set(a)
+	for i := uint64(0); i < e-1; i++ {
+		result = Mul(result, a)
+	}
+	return result
+}
+
+func pow(args ...Any) Any {
+	if len(args) != 2 {
+		panic("'pow' requires exactly 2 arguments, provided: " + LispyStr(args))
+	}
+
+	base := to_float(args[0])
+	exp := to_float(args[1])
+
+	b, _ := base.Value.Float64()
+	e, _ := exp.Value.Float64()
+
+	return ast.FloatNum(math.Pow(b, e))
+}
+
 func StdEnv() *Env {
 	env := Env{}
 
 	env.named_objects = map[string]Any{
-		"print-elapsed": Bool(false),
+		"enable-print-elapsed": Bool(false),
+		"enable-trace":         Bool(false),
 
 		"car":  car,
 		"cdr":  cdr,
@@ -389,6 +444,8 @@ func StdEnv() *Env {
 		"or":     func(args ...Any) Any { return fold_bools(func(x bool, y bool) bool { return x || y }, false, args...) },
 		"apply":  apply,
 		"map":    lispy_map,
+
+		"pow": pow,
 	}
 
 	return &env

@@ -49,7 +49,8 @@ $ ./go-lispy '(begin (define r 10)'     '(* pi (* r r)))'
 314.159265
 
 # eval file
-$ ./go-lispy < fact-bench.l
+$ ./go-lispy < fact-bench.lsp
+$ ./go-lispy < lispy-test.lsp
 
 ```
 
