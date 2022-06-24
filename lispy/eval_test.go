@@ -106,11 +106,11 @@ func Test_lambda(t *testing.T) {
 	a := List{0, 1, 2}
 	b := List{"str", true}
 	r2 := zip2(a, b)
-	expected2 := ast.Quote{List{
+	expected2 := List{
 		List{0, "str"},
 		List{1, true},
 		List{2, nil},
-	}}
+	}
 	if !reflect.DeepEqual(r2, expected2) {
 		t.Errorf("Unexpected r2: %q", LispyStr(r2))
 	}

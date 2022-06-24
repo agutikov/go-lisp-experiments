@@ -1,6 +1,9 @@
 package lispy
 
 import (
+	"fmt"
+	"time"
+
 	"github.com/agutikov/go-lisp-experiments/lispy/syntax/ast"
 )
 
@@ -36,7 +39,7 @@ func (env *Env) eval_lambda(l ast.Lambda) Any {
 		// Eval body in the new nested environment
 		e := newEnv(env)
 		e.assign_vars(l.Args, args...)
-		return e.Eval(l.Body)
+		return e.eval_expr(l.Body)
 	}
 }
 
@@ -110,7 +113,9 @@ func (env *Env) _eval_expr(expr Any) Any {
 
 func (env *Env) eval_expr(expr Any) Any {
 	//fmt.Printf("eval_expr(%#v)\n", expr)
+
 	r := env._eval_expr(expr)
+
 	//env.Print()
 	//fmt.Printf("eval_expr():  %+v  ->  %+v \n", expr, r)
 	//fmt.Printf("eval_expr():  %#v  ->  %#v \n", expr, r)
@@ -118,9 +123,18 @@ func (env *Env) eval_expr(expr Any) Any {
 }
 
 func (env *Env) Eval(expr Any) Any {
-	return quote_if_list(env.eval_expr(expr))
+	started := time.Now()
+
+	r := quote_if_list(env.eval_expr(expr))
+
+	elapsed := time.Since(started)
+	if if_test(env.symbol_lookup(ast.Symbol{"print-elapsed"})) {
+		fmt.Println(" elapsed: ", elapsed)
+	}
+
+	return r
 }
 
 func Lambda(s string) PureFunction {
-	return to_function(StdEnv().Eval(ParseStr(s)))
+	return to_function(StdEnv().eval_expr(ParseStr(s)))
 }
