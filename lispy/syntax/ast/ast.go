@@ -3,7 +3,7 @@ package ast
 import (
 	"errors"
 	"fmt"
-	"strconv"
+	"math/big"
 	"strings"
 
 	"github.com/agutikov/go-lisp-experiments/lispy/syntax/token"
@@ -20,50 +20,58 @@ type Symbol struct {
 }
 
 type Number struct {
-	Value int
+	//TODO: number with dynamic conversion
+}
+
+type Int struct {
+	Value *big.Int
+}
+
+type Float struct {
+	Value *big.Rat
 }
 
 type Str struct {
 	Value string
 }
 
-type Sexpr interface{}
+type Any interface{}
 
 type Quote struct {
-	Value Sexpr
+	Value Any
 }
 
 type Unquote struct {
-	Value Sexpr
+	Value Any
 }
 
 type List struct {
-	List []Sexpr
+	List []Any
 }
 
 type Sequence struct {
-	Seq []Sexpr
+	Seq []Any
 }
 
 type If struct {
-	Test      Sexpr
-	PosBranch Sexpr
-	NegBranch Sexpr
+	Test      Any
+	PosBranch Any
+	NegBranch Any
 }
 
 type Define struct {
 	Sym   Symbol
-	Value Sexpr
+	Value Any
 }
 
 type Set struct {
 	Sym   Symbol
-	Value Sexpr
+	Value Any
 }
 
 type Lambda struct {
 	Args List
-	Body Sexpr
+	Body Any
 }
 
 func NewSymbol(t Attrib) (Symbol, error) {
@@ -71,13 +79,38 @@ func NewSymbol(t Attrib) (Symbol, error) {
 	return Symbol{name}, nil
 }
 
-func NewNumber(t Attrib) (Number, error) {
+func NewInt(t Attrib) (Int, error) {
 	s := string(t.(*token.Token).Lit)
-	val, err := strconv.Atoi(s)
-	if err != nil {
-		return Number{}, errors.New("invalid number literal: \"" + s + "\"")
+
+	n := new(big.Int)
+	n, ok := n.SetString(s, 10)
+	if !ok {
+		return Int{nil}, errors.New("invalid Int literal: \"" + s + "\"")
 	}
-	return Number{val}, nil
+
+	return Int{n}, nil
+}
+
+func IntNum(i int64) Int {
+	return Int{big.NewInt(i)}
+}
+
+func FloatNum(f float64) Float {
+	r := new(big.Rat)
+	r.SetFloat64(f)
+	return Float{r}
+}
+
+func NewFloat(t Attrib) (Float, error) {
+	s := string(t.(*token.Token).Lit)
+
+	f := new(big.Rat)
+	n, ok := f.SetString(s)
+	if !ok {
+		return Float{nil}, errors.New("invalid Float literal: \"" + s + "\"")
+	}
+
+	return Float{n}, nil
 }
 
 func str_replace_escaped(s string) string {
@@ -98,15 +131,15 @@ func NewStr(t Attrib) (Str, error) {
 }
 
 func NewSequence(s Attrib) (Sequence, error) {
-	sexpr := s.(Sexpr)
-	return Sequence{[]Sexpr{sexpr}}, nil
+	sexpr := s.(Any)
+	return Sequence{[]Any{sexpr}}, nil
 }
 
 func Cons(car Attrib, cdr Attrib) (Sequence, error) {
-	sexpr := car.(Sexpr)
+	sexpr := car.(Any)
 	seq := cdr.(Sequence)
 
-	seq.Seq = append([]Sexpr{sexpr}, seq.Seq...)
+	seq.Seq = append([]Any{sexpr}, seq.Seq...)
 
 	return seq, nil
 }
@@ -120,31 +153,31 @@ func NewList(seq Attrib) (List, error) {
 }
 
 func NewQuote(sexpr Attrib) (Quote, error) {
-	return Quote{sexpr.(Sexpr)}, nil
+	return Quote{sexpr.(Any)}, nil
 }
 
 func NewUnquote(sexpr Attrib) (Unquote, error) {
-	return Unquote{sexpr.(Sexpr)}, nil
+	return Unquote{sexpr.(Any)}, nil
 }
 
 func NewDefine(symbol Attrib, value Attrib) (Define, error) {
-	return Define{Sym: symbol.(Symbol), Value: value.(Sexpr)}, nil
+	return Define{Sym: symbol.(Symbol), Value: value.(Any)}, nil
 }
 
 func NewSet(symbol Attrib, value Attrib) (Set, error) {
-	return Set{Sym: symbol.(Symbol), Value: value.(Sexpr)}, nil
+	return Set{Sym: symbol.(Symbol), Value: value.(Any)}, nil
 }
 
 func NewIf(test Attrib, pos_branch Attrib, neg_branch Attrib) (If, error) {
 	return If{
-		Test:      test.(Sexpr),
-		PosBranch: pos_branch.(Sexpr),
-		NegBranch: neg_branch.(Sexpr),
+		Test:      test.(Any),
+		PosBranch: pos_branch.(Any),
+		NegBranch: neg_branch.(Any),
 	}, nil
 }
 
 func NewLambda(args Attrib, body Attrib) (Lambda, error) {
-	return Lambda{Args: args.(List), Body: body.(Sexpr)}, nil
+	return Lambda{Args: args.(List), Body: body.(Any)}, nil
 }
 
 func Map[From any, To any](f func(From) To, args []From) []To {
@@ -159,8 +192,15 @@ func (this Str) String() string {
 	return fmt.Sprintf("%q", this.Value)
 }
 
-func (this Number) String() string {
-	return fmt.Sprintf("%d", this.Value)
+func (this Int) String() string {
+	return this.Value.String()
+}
+
+func (this Float) String() string {
+	f := big.NewFloat(0)
+	f.SetPrec(0)
+	f.SetRat(this.Value)
+	return f.Text('f', int(f.MinPrec())) //TODO: get precision from env
 }
 
 func (this Symbol) String() string {
@@ -168,14 +208,14 @@ func (this Symbol) String() string {
 }
 
 func (this List) String() string {
-	return "(" + strings.Join(Map(func(a Sexpr) string { return String(a) }, this.List), " ") + ")"
+	return "(" + strings.Join(Map(func(a Any) string { return String(a) }, this.List), " ") + ")"
 }
 
 func (this Sequence) String() string {
-	return strings.Join(Map(func(a Sexpr) string { return String(a) }, this.Seq), "\n")
+	return strings.Join(Map(func(a Any) string { return String(a) }, this.Seq), "\n")
 }
 
-func String(this Sexpr) string {
+func String(this Any) string {
 	return fmt.Sprintf("%+v", this)
 }
 

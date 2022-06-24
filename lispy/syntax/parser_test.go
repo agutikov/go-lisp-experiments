@@ -11,7 +11,7 @@ import (
 
 type ParserTestSexpr struct {
 	input  string
-	output ast.Sexpr
+	output ast.Any
 }
 
 func Test_Sexpr(t *testing.T) {
@@ -19,10 +19,12 @@ func Test_Sexpr(t *testing.T) {
 	tests := []ParserTestSexpr{
 		{"str", ast.Symbol{"str"}},
 		{"()", ast.List{}},
-		{"( ( ) ( ) )", ast.List{[]ast.Sexpr{ast.List{}, ast.List{}}}},
-		{"(a b)", ast.List{[]ast.Sexpr{ast.Symbol{"a"}, ast.Symbol{"b"}}}},
-		{"0", ast.Number{0}},
-		{"(+ 99 -1000)", ast.List{[]ast.Sexpr{ast.Symbol{"+"}, ast.Number{99}, ast.Number{-1000}}}},
+		{"( ( ) ( ) )", ast.List{[]ast.Any{ast.List{}, ast.List{}}}},
+		{"(a b)", ast.List{[]ast.Any{ast.Symbol{"a"}, ast.Symbol{"b"}}}},
+		{"0", ast.IntNum(0)},
+		{"(+ 99 -1000)", ast.List{[]ast.Any{
+			ast.Symbol{"+"}, ast.IntNum(99), ast.IntNum(-1000),
+		}}},
 
 		{"\"\"", ast.Str{""}},
 		{"\"a\"", ast.Str{"a"}},
@@ -34,23 +36,23 @@ func Test_Sexpr(t *testing.T) {
 		{"\" \\\" X \\\" \"", ast.Str{" \" X \" "}},
 
 		{"(\"\" \" \" \"string literal\")",
-			ast.List{[]ast.Sexpr{ast.Str{""}, ast.Str{" "}, ast.Str{"string literal"}}}},
+			ast.List{[]ast.Any{ast.Str{""}, ast.Str{" "}, ast.Str{"string literal"}}}},
 
 		{"nil", ast.Nil{}},
-		{"(nil nil)", ast.List{[]ast.Sexpr{ast.Nil{}, ast.Nil{}}}},
+		{"(nil nil)", ast.List{[]ast.Any{ast.Nil{}, ast.Nil{}}}},
 
 		{"'()", ast.Quote{ast.List{}}},
 		{",()", ast.Unquote{ast.List{}}},
-		{"'(x ,y)", ast.Quote{ast.List{[]ast.Sexpr{
+		{"'(x ,y)", ast.Quote{ast.List{[]ast.Any{
 			ast.Symbol{"x"}, ast.Unquote{ast.Symbol{"y"}},
 		}}}},
-		{"'(,('()))", ast.Quote{ast.List{[]ast.Sexpr{
-			ast.Unquote{ast.List{[]ast.Sexpr{ast.Quote{ast.List{}}}}},
+		{"'(,('()))", ast.Quote{ast.List{[]ast.Any{
+			ast.Unquote{ast.List{[]ast.Any{ast.Quote{ast.List{}}}}},
 		}}}},
 
 		{"(lambda (x) (- x))", ast.Lambda{
-			Args: ast.List{[]ast.Sexpr{ast.Symbol{"x"}}},
-			Body: ast.List{[]ast.Sexpr{ast.Symbol{"-"}, ast.Symbol{"x"}}},
+			Args: ast.List{[]ast.Any{ast.Symbol{"x"}}},
+			Body: ast.List{[]ast.Any{ast.Symbol{"-"}, ast.Symbol{"x"}}},
 		}},
 
 		{"(if t f ())", ast.If{
@@ -61,19 +63,19 @@ func Test_Sexpr(t *testing.T) {
 
 		{"(define foo 10)", ast.Define{
 			Sym:   ast.Symbol{"foo"},
-			Value: ast.Number{10},
+			Value: ast.IntNum(10),
 		}},
 
 		{"(set! foo 10)", ast.Set{
 			Sym:   ast.Symbol{"foo"},
-			Value: ast.Number{10},
+			Value: ast.IntNum(10),
 		}},
 	}
 
 	p := parser.NewParser()
 
 	for _, test := range tests {
-		expected := ast.Sequence{[]ast.Sexpr{test.output}}
+		expected := ast.Sequence{[]ast.Any{test.output}}
 		t.Logf("%q, expected: %#v", test.input, expected)
 
 		lex := lexer.NewLexer([]byte(test.input))
@@ -102,12 +104,12 @@ type ParserTestSeq struct {
 
 func Test_Sequence(t *testing.T) {
 	tests := []ParserTestSeq{
-		{"a", ast.Sequence{[]ast.Sexpr{ast.Symbol{"a"}}}},
-		{"() ; comment\n", ast.Sequence{[]ast.Sexpr{ast.List{}}}},
-		{";; line 1\n () ; line 2\n", ast.Sequence{[]ast.Sexpr{ast.List{}}}},
-		{"() ; ()\n", ast.Sequence{[]ast.Sexpr{ast.List{}}}},
+		{"a", ast.Sequence{[]ast.Any{ast.Symbol{"a"}}}},
+		{"() ; comment\n", ast.Sequence{[]ast.Any{ast.List{}}}},
+		{";; line 1\n () ; line 2\n", ast.Sequence{[]ast.Any{ast.List{}}}},
+		{"() ; ()\n", ast.Sequence{[]ast.Any{ast.List{}}}},
 
-		{"\";\"", ast.Sequence{[]ast.Sexpr{ast.Str{";"}}}},
+		{"\";\"", ast.Sequence{[]ast.Any{ast.Str{";"}}}},
 	}
 
 	p := parser.NewParser()

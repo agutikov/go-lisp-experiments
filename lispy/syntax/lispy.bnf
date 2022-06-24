@@ -12,13 +12,18 @@ _char : 'a'-'z' | 'A' - 'Z' ;
 
 _symbol_punct_char : '_' | '-' | '+' | '=' | '@' | '#' | '$' | '!' | ':' | '%'
                    | '^' | '*' | '~' | '<' | '>' | '?'
-;
+                   ;
 
 _symbol_char : _char | _symbol_punct_char | _digit ;
 
 
-decimal_number : ['-'] '1'-'9' {_digit}
-        | '0';
+_decimal_number : '1'-'9' {_digit} | '0' ;
+
+integer_number : ['-'] _decimal_number ;
+
+float_number : ['-'] _decimal_number '.' {_digit} ;
+
+
 
 atomic_symbol : _symbol_char {_symbol_char} ;
 
@@ -77,8 +82,15 @@ False : "f" << ast.Bool(false), nil >> ;
 Symbol : atomic_symbol      << ast.NewSymbol($0) >>
        ;
 
-Number : decimal_number     << ast.NewNumber($0) >>
+Number : Int
+       | Float
        ;
+
+Int : integer_number     << ast.NewInt($0) >>
+    ;
+
+Float : float_number     << ast.NewFloat($0) >>
+      ;
 
 Str : quoted_string      << ast.NewStr($0) >>
     ;
