@@ -54,6 +54,17 @@ $ ./go-lispy < lispy-test.lsp
 
 ```
 
+## Extra features (in addition to original lis.py)
+
+#### Quote and unquote
+
+```
+go-lis.py> '(1 ,(- 0 1) 2)
+'(1 -1 2)
+
+```
+
+
 ## How to use it as a library
 
 ```Go
@@ -79,7 +90,7 @@ func main() {
 }
 ```
 
-### Embed the Lispy lambda into the Go code
+#### Embed the Lispy lambda into the Go code
 
 ```Go
 // Get an executable from lambda expression
@@ -101,7 +112,7 @@ fmt.Println(r)
 
 ## Go-Lispy features
 
-### Big numbers
+#### Big numbers
 
 ```
 go-lis.py> (define fact (lambda (n) (if (<= n 1) 1 (* n (fact (- n 1))))))

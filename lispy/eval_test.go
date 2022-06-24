@@ -28,6 +28,9 @@ func Test_EvalStr(t *testing.T) {
 		{"(or nil 0 () t)", "t"},
 		{"(cons nil nil)", "'(nil)"},
 		{"(and t 1 (cons nil nil) ())", "false"},
+
+		{"'(1 ,(- 3 1) 3)", "'(1 2 3)"},
+		{"'(x (,x))", "'(x ((1 2 3 4)))"},
 	}
 	e := StdEnv()
 	for _, test := range examples {

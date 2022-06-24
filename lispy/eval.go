@@ -43,9 +43,34 @@ func (env *Env) eval_lambda(l ast.Lambda) Any {
 	}
 }
 
+func (env *Env) eval_quote_expr(q Any) Any {
+	switch v := q.(type) {
+	case List:
+		lst := List{}
+		for _, item := range v {
+			lst = append(lst, env.eval_quote_expr(item))
+		}
+		return lst
+	case ast.Unquote:
+		return env.eval_expr(v.Value)
+	default:
+		return v
+	}
+}
+
 func (env *Env) eval_quote(q ast.Quote) Any {
-	//TODO: unquote
-	return q.Value
+	switch v := q.Value.(type) {
+	case List:
+		lst := List{}
+		for _, item := range v {
+			lst = append(lst, env.eval_quote_expr(item))
+		}
+		return lst
+	case ast.Unquote:
+		return env.eval_expr(v.Value)
+	default:
+		return v
+	}
 }
 
 func (env *Env) eval_args(args ...ast.Any) []Any {
