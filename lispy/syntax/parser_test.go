@@ -35,13 +35,25 @@ func Test_Sexpr(t *testing.T) {
 
 		{"(\"\" \" \" \"string literal\")",
 			ast.List{[]ast.Sexpr{ast.Str{""}, ast.Str{" "}, ast.Str{"string literal"}}}},
+
+		{"nil", ast.Nil{}},
+		{"(nil nil)", ast.List{[]ast.Sexpr{ast.Nil{}, ast.Nil{}}}},
+
+		{"'()", ast.Quote{ast.List{}}},
+		{",()", ast.Unquote{ast.List{}}},
+		{"'(x ,y)", ast.Quote{ast.List{[]ast.Sexpr{
+			ast.Symbol{"x"}, ast.Unquote{ast.Symbol{"y"}},
+		}}}},
+		{"'(,('()))", ast.Quote{ast.List{[]ast.Sexpr{
+			ast.Unquote{ast.List{[]ast.Sexpr{ast.Quote{ast.List{}}}}},
+		}}}},
 	}
 
 	p := parser.NewParser()
 
 	for _, test := range tests {
 		expected := ast.Sequence{[]ast.Sexpr{test.output}}
-		t.Logf("%q, expected: %#v", test.input, expected)
+		//t.Logf("%q, expected: %#v", test.input, expected)
 
 		lex := lexer.NewLexer([]byte(test.input))
 		st, err := p.Parse(lex)
@@ -49,15 +61,15 @@ func Test_Sexpr(t *testing.T) {
 			panic(err)
 		}
 
-		s, ok := st.(ast.Sexpr)
+		s, ok := st.(ast.Sequence)
 
-		t.Logf("    -> %#v", s)
+		//t.Logf("    -> %#v", s)
 
 		if !ok {
-			t.Fatalf("This is not a Sexpr")
+			t.Fatalf("This is not a Sequence")
 		}
 		if !reflect.DeepEqual(s, expected) {
-			t.Fatalf("Wrong Sexpr %#v", s)
+			t.Fatalf("Wrong Sexpr:\n%#v\nExpected:\n%#v\nInput: %q", s, expected, test.input)
 		}
 	}
 }
@@ -89,12 +101,12 @@ func Test_Sequence(t *testing.T) {
 			panic(err)
 		}
 
-		s, ok := st.(ast.Sexpr)
+		s, ok := st.(ast.Sequence)
 
 		t.Logf("    -> %#v", s)
 
 		if !ok {
-			t.Fatalf("This is not a Sexpr")
+			t.Fatalf("This is not a Sequence")
 		}
 		if !reflect.DeepEqual(s, expected) {
 			t.Fatalf("Wrong Sexpr %#v", s)

@@ -23,9 +23,9 @@ decimal_number : ['-'] '1'-'9' {_digit}
 atomic_symbol : _symbol_char {_symbol_char} ;
 
 
-_quotedpair : '\\' . ;
+_escaped_char : '\\' . ;
 
-quoted_string : '"' {_quotedpair | .} '"' ;
+quoted_string : '"' {_escaped_char | .} '"' ;
 
 
 
@@ -38,9 +38,21 @@ Sequence : Sexpr                << ast.NewSequence($0) >>
          | Sexpr Sequence       << ast.Cons($0, $1) >>
          ;
 
-Sexpr : Atom      << ast.NewSexpr($0) >>
-      | List      << ast.NewSexpr($0) >>
+Sexpr : BareSexpr
+      | QuotedSexpr
+      | UnquotedSexpr
       ;
+
+BareSexpr : Atom      << ast.NewSexpr($0) >>
+          | List      << ast.NewSexpr($0) >>
+          ;
+
+QuotedSexpr : "'" BareSexpr      << ast.NewQuote($1) >>
+            | "(" "quote" BareSexpr ")" << ast.NewQuote($2) >>
+            ;
+
+UnquotedSexpr : "," BareSexpr     << ast.NewUnquote($1) >>
+              ;
 
 List : "(" Sequence ")"  << ast.NewList($1) >>
      | "(" ")"           << ast.NewList(nil) >>
@@ -49,6 +61,9 @@ List : "(" Sequence ")"  << ast.NewList($1) >>
 Atom : atomic_symbol      << ast.NewSymbol($0) >>
      | decimal_number     << ast.NewNumber($0) >>
      | quoted_string      << ast.NewStr($0) >>
+     | "nil"              << ast.Nil{}, nil >>
      ;
+
+
 
 

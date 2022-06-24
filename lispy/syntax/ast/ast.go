@@ -11,6 +11,8 @@ import (
 
 type Attrib interface{}
 
+type Nil struct{}
+
 type Symbol struct {
 	Name string
 }
@@ -24,6 +26,14 @@ type Str struct {
 }
 
 type Sexpr interface{}
+
+type Quote struct {
+	Value Sexpr
+}
+
+type Unquote struct {
+	Value Sexpr
+}
 
 type List struct {
 	List []Sexpr
@@ -88,6 +98,14 @@ func NewList(seq Attrib) (List, error) {
 
 func NewSexpr(s Attrib) (Sexpr, error) {
 	return Sexpr(s), nil
+}
+
+func NewQuote(sexpr Attrib) (Quote, error) {
+	return Quote{sexpr.(Sexpr)}, nil
+}
+
+func NewUnquote(sexpr Attrib) (Unquote, error) {
+	return Unquote{sexpr.(Sexpr)}, nil
 }
 
 func Map[From any, To any](f func(From) To, args []From) []To {
