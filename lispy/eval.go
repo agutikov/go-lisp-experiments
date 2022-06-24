@@ -1,160 +1,104 @@
 package lispy
 
-func (env *Env) eval_if(expr ...Any) Any {
-	//TODO: verify number of args on parsing stage
-	if len(expr) != 4 {
-		panic("'if' statement requires exactly 3 arguments (if test conseq alt), while provided: " + LispyStr(expr))
-	}
-	test := expr[1]
-	conseq := expr[2]
-	alt := expr[3]
+import (
+	"github.com/agutikov/go-lisp-experiments/lispy/syntax/ast"
+)
 
-	v := env.Eval(test)
+func (env *Env) eval_if(expr ast.If) Any {
+	v := env.eval_expr(expr.Test)
 
-	var r Any
+	var r ast.Any
 
 	if if_test(v) {
-		r = conseq
+		r = expr.PosBranch
 	} else {
-		r = alt
+		r = expr.NegBranch
 	}
 
-	return env.Eval(r)
+	return env.eval_expr(r)
 }
 
-func (env *Env) eval_define(expr ...Any) Any {
-	//TODO: verify number of args on parsing stage
-	if len(expr) != 3 {
-		panic("'define' statement requires exactly 2 arguments (define name exp), while provided: " + LispyStr(expr))
-	}
-	name := expr[1]
-	exp := expr[2]
+func (env *Env) eval_define(d ast.Define) Any {
+	v := env.eval_expr(d.Value)
+	env.named_objects[d.Sym.Name] = v
+	return v
+}
 
-	value := env.Eval(exp)
-
-	switch s := name.(type) {
-	case Symbol:
-		env.named_objects[s] = value
-	default:
-		panic("Invalid define name argument")
-	}
-
+func (env *Env) eval_set(s ast.Set) Any {
+	value := env.eval_expr(s.Value)
+	env.env_lookup(s.Sym.Name).named_objects[s.Sym.Name] = value
 	return value
 }
 
-func (env *Env) eval_set(expr ...Any) Any {
-	//TODO: verify number of args on parsing stage
-	if len(expr) != 3 {
-		panic("'set!' statement requires exactly 2 arguments (set! name exp), while provided: " + LispyStr(expr))
-	}
-	name := expr[1]
-	exp := expr[2]
-
-	value := env.Eval(exp)
-
-	switch s := name.(type) {
-	case Symbol:
-		env.env_lookup(s).named_objects[s] = value
-	default:
-		panic("Invalid set! name argument")
-	}
-
-	return value
-}
-
-func lambda_args(vars Any) []Symbol {
-	args := to_list(vars)
-
-	a := []Symbol{}
-
-	for _, elem := range args {
-		a = append(a, to_symbol(elem))
-	}
-
-	return a
-}
-
-func (env *Env) eval_lambda(expr ...Any) Any {
-	//TODO: verify number of args on parsing stage
-	if len(expr) != 3 {
-		panic("'lambda' statement requires exactly 2 arguments (lambda (vars...) body), while provided: " + LispyStr(expr))
-	}
-	p := expr[1]
-	body := expr[2]
-
-	params := lambda_args(p)
-
+func (env *Env) eval_lambda(l ast.Lambda) Any {
 	// Return callable which will
 	return func(args ...Any) Any {
 		// Eval body in the new nested environment
 		e := newEnv(env)
-		e.assign_vars(params, args)
-		return e.Eval(body)
+		e.assign_vars(l.Args, args...)
+		return e.Eval(l.Body)
 	}
 }
 
-func eval_quote(expr ...Any) Any {
-	if len(expr) != 2 {
-		panic("'quote' statement requires exactly 1 argument (quote exp), while provided: " + LispyStr(expr))
-	}
-	return expr[1]
+func (env *Env) eval_quote(q ast.Quote) Any {
+	//TODO: unquote
+	return q.Value
 }
 
-func (env *Env) eval_builtin(s Builtin, expr List) Any {
-	switch s { //TODO: is there any benefit of using map[Symbol]func(*Env, ...Any)Any ?
-	case "quote":
-		//TODO: unquote????
-		return eval_quote(expr...)
-	case "if":
-		return env.eval_if(expr...)
-	case "define":
-		//TODO: what define should return ?
-		return env.eval_define(expr...)
-	case "set!":
-		//TODO: what set! should return ?
-		return env.eval_set(expr...)
-	case "lambda":
-		return env.eval_lambda(expr...)
-	default:
-		panic("Unknown builtin")
-	}
-}
-
-func (env *Env) eval_args(args ...Any) List {
-	r := make(List, 0)
+func (env *Env) eval_args(args ...ast.Any) []Any {
+	r := []Any{}
 	for _, elem := range args {
-		r = append(r, env.Eval(elem))
+		r = append(r, env.eval_expr(elem))
 	}
 	return r
 }
 
-func (env *Env) eval_expr(expr List) Any {
-	head := expr[0]
-	tail := expr[1:]
-	f_value := env.Eval(head)
+func (env *Env) eval_list(lst List) Any {
+	if len(lst) == 0 {
+		return lst
+	}
+	head := lst[0]
+	tail := lst[1:]
+	f_value := env.eval_expr(head)
 	f := to_function(f_value)
 	args := env.eval_args(tail...)
 	return f(args...)
 }
 
-func (env *Env) eval_list(expr List) Any {
-	if len(expr) == 0 {
-		return expr
-	}
-	head := expr[0]
-
-	switch s := head.(type) {
-	case Builtin:
-		return env.eval_builtin(s, expr)
+func quote_if_list(value Any) Any {
+	switch v := value.(type) {
+	case List:
+		return ast.Quote{Value: v}
 	default:
-		return env.eval_expr(expr)
+		return v
 	}
 }
 
-func (env *Env) Eval(expr Any) Any {
+func (env *Env) eval_sequence(seq ast.Sequence) Any {
+	var r Any
+	r = nil
+	for _, expr := range seq {
+		r = env.eval_expr(expr)
+	}
+	return r
+}
+
+func (env *Env) _eval_expr(expr Any) Any {
 	switch v := expr.(type) {
 	case List:
 		return env.eval_list(v)
+	case ast.Sequence:
+		return env.eval_sequence(v)
+	case ast.Quote:
+		return env.eval_quote(v)
+	case ast.Define:
+		return env.eval_define(v)
+	case ast.If:
+		return env.eval_if(v)
+	case ast.Set:
+		return env.eval_set(v)
+	case ast.Lambda:
+		return env.eval_lambda(v)
 	case Symbol:
 		// Symbol atom is a name of object in the environment
 		return env.symbol_lookup(v)
@@ -164,6 +108,19 @@ func (env *Env) Eval(expr Any) Any {
 	}
 }
 
+func (env *Env) eval_expr(expr Any) Any {
+	//fmt.Printf("eval_expr(%#v)\n", expr)
+	r := env._eval_expr(expr)
+	//env.Print()
+	//fmt.Printf("eval_expr():  %+v  ->  %+v \n", expr, r)
+	//fmt.Printf("eval_expr():  %#v  ->  %#v \n", expr, r)
+	return r
+}
+
+func (env *Env) Eval(expr Any) Any {
+	return quote_if_list(env.eval_expr(expr))
+}
+
 func Lambda(s string) PureFunction {
-	return to_function(StdEnv().Eval(ParseExpr(s)))
+	return to_function(StdEnv().Eval(ParseStr(s)))
 }

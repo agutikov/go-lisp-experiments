@@ -3,6 +3,8 @@ package lispy
 import (
 	"math"
 	"math/big"
+
+	"github.com/agutikov/go-lisp-experiments/lispy/syntax/ast"
 )
 
 func car(arg ...Any) Any {
@@ -19,7 +21,7 @@ func cons(args ...Any) Any {
 	}
 	var r List
 	tail := List{}
-	if args[1] != nil {
+	if !is_nil(args[1]) {
 		tail = to_list(args[1])
 	}
 	r = append(List{args[0]}, tail...)
@@ -27,7 +29,7 @@ func cons(args ...Any) Any {
 }
 
 func list(args ...Any) Any {
-	return List(args)
+	return append(List{}, args...)
 }
 
 func fold_bools(f func(bool, bool) bool, init bool, args ...Any) Bool {
@@ -110,12 +112,12 @@ func sum(args ...Any) Any {
 	return fold_nums("+",
 		func(a Int, b Int) Int {
 			r := Int{big.NewInt(0)}
-			r.v = r.v.Add(a.v, b.v)
+			r.Value = r.Value.Add(a.Value, b.Value)
 			return r
 		},
 		func(a Float, b Float) Float {
-			r := FromFloat(0)
-			r.v = r.v.Add(a.v, b.v)
+			r := ast.FloatNum(0)
+			r.Value = r.Value.Add(a.Value, b.Value)
 			return r
 		},
 		Int{big.NewInt(0)}, args...,
@@ -126,10 +128,10 @@ func minus(arg Any) Any {
 	switch x := arg.(type) {
 	case Int:
 		z := big.NewInt(0)
-		return Int{z.Neg(x.v)}
+		return Int{z.Neg(x.Value)}
 	case Float:
 		z := big.NewRat(0, 1)
-		return Float{z.Neg(x.v)}
+		return Float{z.Neg(x.Value)}
 	default:
 		panic("Invalid unary '-' argument: " + LispyStr(arg))
 	}
@@ -142,12 +144,12 @@ func sub(args ...Any) Any {
 	return numeric_2_args("-",
 		func(a Int, b Int) Int {
 			r := Int{big.NewInt(0)}
-			r.v = r.v.Sub(a.v, b.v)
+			r.Value = r.Value.Sub(a.Value, b.Value)
 			return r
 		},
 		func(a Float, b Float) Float {
-			r := FromFloat(0)
-			r.v = r.v.Sub(a.v, b.v)
+			r := ast.FloatNum(0)
+			r.Value = r.Value.Sub(a.Value, b.Value)
 			return r
 		},
 		args...,
@@ -158,12 +160,12 @@ func prod(args ...Any) Any {
 	return fold_nums("*",
 		func(a Int, b Int) Int {
 			r := Int{big.NewInt(0)}
-			r.v = r.v.Mul(a.v, b.v)
+			r.Value = r.Value.Mul(a.Value, b.Value)
 			return r
 		},
 		func(a Float, b Float) Float {
-			r := FromFloat(0)
-			r.v = r.v.Mul(a.v, b.v)
+			r := ast.FloatNum(0)
+			r.Value = r.Value.Mul(a.Value, b.Value)
 			return r
 		},
 		Int{big.NewInt(1)}, args...,
@@ -173,8 +175,8 @@ func prod(args ...Any) Any {
 func div(args ...Any) Any {
 	return numeric_2_floats("/",
 		func(a Float, b Float) Any {
-			r := FromFloat(0)
-			r.v = r.v.Quo(a.v, b.v)
+			r := ast.FloatNum(0)
+			r.Value = r.Value.Quo(a.Value, b.Value)
 			return r
 		},
 		args...,
@@ -214,19 +216,19 @@ func numeric_2_floats(name string, f func(Float, Float) Any, args ...Any) Any {
 }
 
 func gt(args ...Any) Any {
-	return numeric_2_floats(">", func(a Float, b Float) Any { return Bool(a.v.Cmp(b.v) > 0) }, args...)
+	return numeric_2_floats(">", func(a Float, b Float) Any { return Bool(a.Value.Cmp(b.Value) > 0) }, args...)
 }
 
 func lt(args ...Any) Any {
-	return numeric_2_floats(">", func(a Float, b Float) Any { return Bool(a.v.Cmp(b.v) < 0) }, args...)
+	return numeric_2_floats(">", func(a Float, b Float) Any { return Bool(a.Value.Cmp(b.Value) < 0) }, args...)
 }
 
 func ge(args ...Any) Any {
-	return numeric_2_floats(">", func(a Float, b Float) Any { return Bool(a.v.Cmp(b.v) >= 0) }, args...)
+	return numeric_2_floats(">", func(a Float, b Float) Any { return Bool(a.Value.Cmp(b.Value) >= 0) }, args...)
 }
 
 func le(args ...Any) Any {
-	return numeric_2_floats(">", func(a Float, b Float) Any { return Bool(a.v.Cmp(b.v) <= 0) }, args...)
+	return numeric_2_floats(">", func(a Float, b Float) Any { return Bool(a.Value.Cmp(b.Value) <= 0) }, args...)
 }
 
 func list_cmp(a List, b List) Bool {
@@ -255,14 +257,14 @@ func equal(a Any, b Any) Bool {
 	case Int:
 		switch y := b.(type) {
 		case Int:
-			return x.v.Cmp(y.v) == 0
+			return x.Value.Cmp(y.Value) == 0
 		default:
 			return Bool(false)
 		}
 	case Float:
 		switch y := b.(type) {
 		case Float:
-			return x.v.Cmp(y.v) == 0
+			return x.Value.Cmp(y.Value) == 0
 		default:
 			return Bool(false)
 		}
@@ -360,7 +362,7 @@ func apply(args ...Any) Any {
 func StdEnv() *Env {
 	env := Env{}
 
-	env.named_objects = map[Symbol]Any{
+	env.named_objects = map[string]Any{
 		"car":  car,
 		"cdr":  cdr,
 		"cons": cons,
@@ -376,7 +378,7 @@ func StdEnv() *Env {
 		"=":    eq,
 		//TODO: common way to check the number of args and the types
 		"begin":  func(args ...Any) Any { return args[len(args)-1] },
-		"pi":     FromFloat(math.Pi),
+		"pi":     ast.FloatNum(math.Pi),
 		"eq?":    func(args ...Any) Any { return Bool(args[0] == args[1]) },
 		"equal?": eq,
 		"length": func(args ...Any) Any { return Int{big.NewInt(int64(len(to_list(args[0]))))} },

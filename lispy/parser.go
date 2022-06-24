@@ -1,78 +1,38 @@
 package lispy
 
 import (
-	"math/big"
-	"strings"
+	"io/ioutil"
+
+	"github.com/agutikov/go-lisp-experiments/lispy/syntax/ast"
+	"github.com/agutikov/go-lisp-experiments/lispy/syntax/lexer"
+	"github.com/agutikov/go-lisp-experiments/lispy/syntax/parser"
 )
 
-func tokenize(s string) []string {
-	s = strings.Replace(s, "(", " ( ", -1)
-	s = strings.Replace(s, ")", " ) ", -1)
-	return strings.Fields(s)
-}
-
-type Parser struct {
-	tokens []string
-	pos    int
-}
-
-func newParser(s string) *Parser {
-	p := Parser{pos: 0}
-	p.tokens = tokenize(s)
-	return &p
-}
-
-var builtins = map[string]Any{
-	"if":     Builtin("if"),
-	"quote":  Builtin("quote"),
-	"define": Builtin("define"),
-	"set!":   Builtin("set!"),
-	"lambda": Builtin("lambda"),
-	"t":      Bool(true),
-	"f":      Bool(false),
-	"nil":    nil,
-}
-
-func (p *Parser) parse_atom(token string) Any {
-	if v, ok := builtins[token]; ok {
-		return v
+func pasrse_bytes(bytes []byte) ast.Sequence {
+	p := parser.NewParser()
+	lex := lexer.NewLexer(bytes)
+	st, err := p.Parse(lex)
+	if err != nil {
+		panic(err)
 	}
 
-	n := new(big.Int)
-	n, ok := n.SetString(token, 10)
-
-	if ok {
-		return Int{n}
+	seq, ok := st.(ast.Sequence)
+	if !ok {
+		panic("Invalid parser output type")
 	}
 
-	f := new(big.Rat)
-	f, ok = f.SetString(token)
-
-	if ok {
-		return Float{f}
-	}
-
-	//TODO: strings - with parser generator
-	return Symbol(token)
+	return seq
 }
 
-func (p *Parser) parse_list() Any {
-	token := p.tokens[p.pos]
-	p.pos++
-	if token == "(" {
-		l := List{}
-		for p.tokens[p.pos] != ")" {
-			l = append(l, p.parse_list())
-		}
-		p.pos++
-		return l
-	} else if token == ")" {
-		panic("Unexpected ')'")
-	} else {
-		return p.parse_atom(token)
-	}
+func ParseStr(s string) ast.Sequence {
+	return pasrse_bytes([]byte(s))
 }
 
-func ParseExpr(s string) Any {
-	return newParser(s).parse_list()
+func ParseFile(filename string) ast.Sequence {
+	bytes, err := ioutil.ReadFile(filename)
+	if err != nil {
+		panic(err)
+	}
+
+	return pasrse_bytes(bytes)
 }

@@ -11,7 +11,7 @@ import (
 
 type Attrib interface{}
 
-type Nil struct{}
+type Nil struct{} //TODO: replace with nil
 
 type Bool bool
 
@@ -45,13 +45,9 @@ type Unquote struct {
 	Value Any
 }
 
-type List struct {
-	List []Any
-}
+type List []Any
 
-type Sequence struct {
-	Seq []Any
-}
+type Sequence []Any
 
 type If struct {
 	Test      Any
@@ -70,7 +66,7 @@ type Set struct {
 }
 
 type Lambda struct {
-	Args List
+	Args []Symbol
 	Body Any
 }
 
@@ -132,14 +128,14 @@ func NewStr(t Attrib) (Str, error) {
 
 func NewSequence(s Attrib) (Sequence, error) {
 	sexpr := s.(Any)
-	return Sequence{[]Any{sexpr}}, nil
+	return Sequence{sexpr}, nil
 }
 
 func Cons(car Attrib, cdr Attrib) (Sequence, error) {
 	sexpr := car.(Any)
 	seq := cdr.(Sequence)
 
-	seq.Seq = append([]Any{sexpr}, seq.Seq...)
+	seq = append([]Any{sexpr}, seq...)
 
 	return seq, nil
 }
@@ -147,7 +143,7 @@ func Cons(car Attrib, cdr Attrib) (Sequence, error) {
 func NewList(seq Attrib) (List, error) {
 	lst := List{}
 	if seq != nil {
-		lst.List = seq.(Sequence).Seq
+		lst = List(seq.(Sequence))
 	}
 	return lst, nil
 }
@@ -177,7 +173,11 @@ func NewIf(test Attrib, pos_branch Attrib, neg_branch Attrib) (If, error) {
 }
 
 func NewLambda(args Attrib, body Attrib) (Lambda, error) {
-	return Lambda{Args: args.(List), Body: body.(Any)}, nil
+	a := []Symbol{}
+	for _, item := range args.(Sequence) {
+		a = append(a, item.(Symbol))
+	}
+	return Lambda{Args: a, Body: body.(Any)}, nil
 }
 
 func Map[From any, To any](f func(From) To, args []From) []To {
@@ -208,14 +208,17 @@ func (this Symbol) String() string {
 }
 
 func (this List) String() string {
-	return "(" + strings.Join(Map(func(a Any) string { return String(a) }, this.List), " ") + ")"
+	return "(" + strings.Join(Map(func(a Any) string { return String(a) }, this), " ") + ")"
 }
 
 func (this Sequence) String() string {
-	return strings.Join(Map(func(a Any) string { return String(a) }, this.Seq), "\n")
+	return strings.Join(Map(func(a Any) string { return String(a) }, this), "\n")
 }
 
 func String(this Any) string {
+	if this == nil {
+		return "nil"
+	}
 	return fmt.Sprintf("%+v", this)
 }
 

@@ -11,7 +11,7 @@ _digit : '0'-'9' ;
 _char : 'a'-'z' | 'A' - 'Z' ;
 
 _symbol_punct_char : '_' | '-' | '+' | '=' | '@' | '#' | '$' | '!' | ':' | '%'
-                   | '^' | '*' | '~' | '<' | '>' | '?'
+                   | '^' | '*' | '~' | '<' | '>' | '?' | '/'
                    ;
 
 _symbol_char : _char | _symbol_punct_char | _digit ;
@@ -114,7 +114,7 @@ Lambda : "(" "lambda" LambdaArgs Sexpr ")"      << ast.NewLambda($2, $3) >>
 LambdaArgs : ListOfSymbols
            ;
 
-ListOfSymbols : "(" SequenceOfSymbols ")"       << ast.NewList($1) >>
+ListOfSymbols : "(" SequenceOfSymbols ")"       << $1, nil >>
               ;
 
 SequenceOfSymbols : Symbol                      << ast.NewSequence($0) >>

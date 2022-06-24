@@ -17,7 +17,7 @@ func exec(env *lispy.Env, line string) {
 	}()
 
 	//started := time.Now()
-	expr := lispy.ParseExpr(line)
+	expr := lispy.ParseStr(line)
 	r := env.Eval(expr)
 	//elapsed := time.Since(started)
 	fmt.Println(lispy.LispyStr(r))

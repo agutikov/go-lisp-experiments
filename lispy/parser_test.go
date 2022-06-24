@@ -3,6 +3,8 @@ package lispy
 import (
 	"reflect"
 	"testing"
+
+	"github.com/agutikov/go-lisp-experiments/lispy/syntax/ast"
 )
 
 func Test_ParserDirect(t *testing.T) {
@@ -13,10 +15,11 @@ func Test_ParserDirect(t *testing.T) {
 		"t",
 		"f",
 		"(nil 1 () (1 2) t)",
-		"(define foo (x y) (+ (* x x) (* y y)))",
+		"(define foo (+ (* x x) (* y y)))",
 	}
 	for _, line := range lines {
-		lst := ParseExpr(line)
+		t.Logf("%q", line)
+		lst := ParseStr(line)
 		s := LispyStr(lst)
 		if s != line {
 			t.Errorf("String representations are not equal: %q and %q", line, s)
@@ -26,22 +29,30 @@ func Test_ParserDirect(t *testing.T) {
 
 func Test_ParserReverse(t *testing.T) {
 	exprs := []Any{
-		nil,
+		ast.Nil{},
 		List{},
-		FromInt(0),
+		ast.IntNum(0),
 		Bool(true),
 		Bool(false),
-		List{nil, FromInt(1), List{}, List{FromInt(1), Bool(false)}, Bool(true)},
-		List{Builtin("if"), Symbol("x"), FromInt(1), FromInt(0)},
+		List{
+			ast.Nil{}, ast.IntNum(1), List{},
+			List{ast.IntNum(1), Bool(false)},
+			Bool(true),
+		},
+		List{
+			Symbol{"_if"}, Symbol{"x"}, ast.IntNum(1), ast.IntNum(0),
+		},
 	}
 	for _, expr := range exprs {
-		s := LispyStr(expr)
-		lst := ParseExpr(s)
-		if reflect.TypeOf(lst) != reflect.TypeOf(expr) {
-			t.Errorf("Types are not equal: %v and %v", expr, lst)
+		e := ast.Sequence{expr}
+		t.Logf("%#v", e)
+		s := LispyStr(e)
+		lst := ParseStr(s)
+		if reflect.TypeOf(lst) != reflect.TypeOf(e) {
+			t.Errorf("Types are not equal: %#v and %#v", e, lst)
 		}
-		if !reflect.DeepEqual(lst, expr) {
-			t.Errorf("Values are not equal: %v and %v", expr, lst)
+		if !reflect.DeepEqual(lst, e) {
+			t.Errorf("Values are not equal: %#v and %#v", e, lst)
 		}
 	}
 }
