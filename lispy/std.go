@@ -361,6 +361,8 @@ func StdEnv() *Env {
 	env := Env{}
 
 	env.named_objects = map[Symbol]Any{
+		"print-elapsed": Bool(false),
+
 		"car":  car,
 		"cdr":  cdr,
 		"cons": cons,

@@ -16,12 +16,9 @@ func exec(env *lispy.Env, line string) {
 		}
 	}()
 
-	//started := time.Now()
 	expr := lispy.ParseExpr(line)
 	r := env.Eval(expr)
-	//elapsed := time.Since(started)
 	fmt.Println(lispy.LispyStr(r))
-	//fmt.Println(" elapsed:", elapsed)
 }
 
 func repl() {
@@ -37,6 +34,8 @@ func repl() {
 		line = strings.TrimSpace(line)
 		if len(line) > 0 {
 			exec(env, line)
+		} else {
+			fmt.Println()
 		}
 	}
 }

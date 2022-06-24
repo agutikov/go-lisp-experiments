@@ -40,6 +40,9 @@ go-lis.py>
 $ ./go-lispy '(begin (define r 10)'     '(* pi (* r r)))'
 314.159265
 
+# eval file
+$ ./go-lispy < fact-bench.l
+
 ```
 
 ## How to use it as a library

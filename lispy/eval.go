@@ -1,5 +1,10 @@
 package lispy
 
+import (
+	"fmt"
+	"time"
+)
+
 func (env *Env) eval_if(expr ...Any) Any {
 	//TODO: verify number of args on parsing stage
 	if len(expr) != 4 {
@@ -9,7 +14,7 @@ func (env *Env) eval_if(expr ...Any) Any {
 	conseq := expr[2]
 	alt := expr[3]
 
-	v := env.Eval(test)
+	v := env.eval(test)
 
 	var r Any
 
@@ -19,7 +24,7 @@ func (env *Env) eval_if(expr ...Any) Any {
 		r = alt
 	}
 
-	return env.Eval(r)
+	return env.eval(r)
 }
 
 func (env *Env) eval_define(expr ...Any) Any {
@@ -30,7 +35,7 @@ func (env *Env) eval_define(expr ...Any) Any {
 	name := expr[1]
 	exp := expr[2]
 
-	value := env.Eval(exp)
+	value := env.eval(exp)
 
 	switch s := name.(type) {
 	case Symbol:
@@ -50,7 +55,7 @@ func (env *Env) eval_set(expr ...Any) Any {
 	name := expr[1]
 	exp := expr[2]
 
-	value := env.Eval(exp)
+	value := env.eval(exp)
 
 	switch s := name.(type) {
 	case Symbol:
@@ -89,7 +94,7 @@ func (env *Env) eval_lambda(expr ...Any) Any {
 		// Eval body in the new nested environment
 		e := newEnv(env)
 		e.assign_vars(params, args)
-		return e.Eval(body)
+		return e.eval(body)
 	}
 }
 
@@ -123,7 +128,7 @@ func (env *Env) eval_builtin(s Builtin, expr List) Any {
 func (env *Env) eval_args(args ...Any) List {
 	r := make(List, 0)
 	for _, elem := range args {
-		r = append(r, env.Eval(elem))
+		r = append(r, env.eval(elem))
 	}
 	return r
 }
@@ -131,7 +136,7 @@ func (env *Env) eval_args(args ...Any) List {
 func (env *Env) eval_expr(expr List) Any {
 	head := expr[0]
 	tail := expr[1:]
-	f_value := env.Eval(head)
+	f_value := env.eval(head)
 	f := to_function(f_value)
 	args := env.eval_args(tail...)
 	return f(args...)
@@ -151,7 +156,7 @@ func (env *Env) eval_list(expr List) Any {
 	}
 }
 
-func (env *Env) Eval(expr Any) Any {
+func (env *Env) eval(expr Any) Any {
 	switch v := expr.(type) {
 	case List:
 		return env.eval_list(v)
@@ -164,6 +169,19 @@ func (env *Env) Eval(expr Any) Any {
 	}
 }
 
+func (env *Env) Eval(expr Any) Any {
+	started := time.Now()
+
+	r := env.eval(expr)
+
+	elapsed := time.Since(started)
+	if if_test(env.symbol_lookup("print-elapsed")) {
+		fmt.Println(" elapsed:", elapsed)
+	}
+
+	return r
+}
+
 func Lambda(s string) PureFunction {
-	return to_function(StdEnv().Eval(ParseExpr(s)))
+	return to_function(StdEnv().eval(ParseExpr(s)))
 }
