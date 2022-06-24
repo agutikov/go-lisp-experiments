@@ -45,12 +45,12 @@ $ ./go-lispy
 go-lis.py>
 
 # eval command line arguments
-$ ./go-lispy '(begin (define r 10)'     '(* pi (* r r)))'
+$ ./go-lispy -e '(begin (define r 10) (* pi (* r r)))'
 314.159265
 
 # eval file
-$ ./go-lispy < fact-bench.lsp
-$ ./go-lispy < lispy-test.lsp
+$ ./go-lispy -e '(set! enable-print-elapsed t) (set! enable-trace t)' ./fact-bench.lsp
+$ ./go-lispy -e '(set! enable-print-elapsed t) (set! enable-trace t)' ./lispy-test.lsp
 
 ```
 

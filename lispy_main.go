@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/agutikov/go-lisp-experiments/lispy"
+	"github.com/agutikov/go-lisp-experiments/cmdlex"
 )
 
 func exec(env *lispy.Env, line string) {
@@ -21,14 +22,25 @@ func exec(env *lispy.Env, line string) {
 	fmt.Println(lispy.LispyStr(r))
 }
 
-func repl() {
+func exec_file(env *lispy.Env, filename string) {
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Println(r)
+		}
+	}()
+
+	expr := lispy.ParseFile(filename)
+	r := env.Eval(expr)
+	fmt.Println(lispy.LispyStr(r))
+}
+
+func repl(env *lispy.Env) {
 	reader := bufio.NewReader(os.Stdin)
-	env := lispy.StdEnv()
 	for {
 		fmt.Print("go-lis.py> ")
 		line, err := reader.ReadString('\n')
 		if err != nil {
-			fmt.Println()
+			fmt.Println(err)
 			break
 		}
 		line = strings.TrimSpace(line)
@@ -40,11 +52,30 @@ func repl() {
 	}
 }
 
+
+
 func main() {
-	if len(os.Args) > 1 {
-		env := lispy.StdEnv()
-		exec(env, strings.Join(os.Args[1:], " "))
-	} else {
-		repl()
+	args := cmdlex.ParseCmdLineArgs(os.Args, 0)
+
+	fmt.Printf("%+v\n", args)
+
+	env := lispy.StdEnv()
+
+	if exprs, ok := args.Options["e"]; ok {
+		// Eval cmdline args
+		exec(env, strings.Join(exprs, "\n"))
+	}
+
+	for _, filename := range args.Positional[1:] {
+		if filename == "-" {
+			repl(env)
+		} else {
+			exec_file(env, filename)
+		}
+	}
+
+	if len(args.Positional) == 1 && len(args.Options) == 0 {
+		// No other options - run repl
+		repl(env)
 	}
 }

@@ -106,7 +106,18 @@ func (env *Env) eval_sequence(seq ast.Sequence) Any {
 	var r Any
 	r = nil
 	for _, expr := range seq {
+		started := time.Now()
+
 		r = env.eval_expr(expr)
+
+		if if_test(env.symbol_lookup(ast.Symbol{"enable-trace"})) {
+			fmt.Printf("eval_expr():  %s  ->  %s \n", LispyStr(expr), LispyStr(r))
+		}
+
+		elapsed := time.Since(started)
+		if if_test(env.symbol_lookup(ast.Symbol{"enable-print-elapsed"})) {
+			fmt.Println(" elapsed: ", elapsed)
+		}
 	}
 	return r
 }
@@ -142,22 +153,13 @@ func (env *Env) eval_expr(expr Any) Any {
 	r := env._eval_expr(expr)
 
 	//env.Print()
-	if if_test(env.symbol_lookup(ast.Symbol{"enable-trace"})) {
-		fmt.Printf("eval_expr():  %s  ->  %s \n", LispyStr(expr), LispyStr(r))
-	}
 	//fmt.Printf("eval_expr():  %#v  ->  %#v \n", expr, r)
 	return r
 }
 
-func (env *Env) Eval(expr Any) Any {
-	started := time.Now()
+func (env *Env) Eval(seq ast.Sequence) Any {
 
-	r := quote_if_list(env.eval_expr(expr))
-
-	elapsed := time.Since(started)
-	if if_test(env.symbol_lookup(ast.Symbol{"enable-print-elapsed"})) {
-		fmt.Println(" elapsed: ", elapsed)
-	}
+	r := quote_if_list(env.eval_sequence(seq))
 
 	return r
 }

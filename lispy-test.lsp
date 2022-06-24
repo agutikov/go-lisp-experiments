@@ -1,8 +1,4 @@
 
-(set! enable-trace false)
-(set! enable-print-elapsed t)
-
-
 (define circle-area (lambda (r) (* pi (* r r))))
 (circle-area 3)
 ;28.274333877
