@@ -13,6 +13,8 @@ type Attrib interface{}
 
 type Nil struct{}
 
+type Bool bool
+
 type Symbol struct {
 	Name string
 }
@@ -41,6 +43,27 @@ type List struct {
 
 type Sequence struct {
 	Seq []Sexpr
+}
+
+type If struct {
+	Test      Sexpr
+	PosBranch Sexpr
+	NegBranch Sexpr
+}
+
+type Define struct {
+	Sym   Symbol
+	Value Sexpr
+}
+
+type Set struct {
+	Sym   Symbol
+	Value Sexpr
+}
+
+type Lambda struct {
+	Args List
+	Body Sexpr
 }
 
 func NewSymbol(t Attrib) (Symbol, error) {
@@ -96,16 +119,32 @@ func NewList(seq Attrib) (List, error) {
 	return lst, nil
 }
 
-func NewSexpr(s Attrib) (Sexpr, error) {
-	return Sexpr(s), nil
-}
-
 func NewQuote(sexpr Attrib) (Quote, error) {
 	return Quote{sexpr.(Sexpr)}, nil
 }
 
 func NewUnquote(sexpr Attrib) (Unquote, error) {
 	return Unquote{sexpr.(Sexpr)}, nil
+}
+
+func NewDefine(symbol Attrib, value Attrib) (Define, error) {
+	return Define{Sym: symbol.(Symbol), Value: value.(Sexpr)}, nil
+}
+
+func NewSet(symbol Attrib, value Attrib) (Set, error) {
+	return Set{Sym: symbol.(Symbol), Value: value.(Sexpr)}, nil
+}
+
+func NewIf(test Attrib, pos_branch Attrib, neg_branch Attrib) (If, error) {
+	return If{
+		Test:      test.(Sexpr),
+		PosBranch: pos_branch.(Sexpr),
+		NegBranch: neg_branch.(Sexpr),
+	}, nil
+}
+
+func NewLambda(args Attrib, body Attrib) (Lambda, error) {
+	return Lambda{Args: args.(List), Body: body.(Sexpr)}, nil
 }
 
 func Map[From any, To any](f func(From) To, args []From) []To {
@@ -133,9 +172,45 @@ func (this List) String() string {
 }
 
 func (this Sequence) String() string {
-	return strings.Join(Map(func(a Sexpr) string { return String(a) }, this.Seq), " ")
+	return strings.Join(Map(func(a Sexpr) string { return String(a) }, this.Seq), "\n")
 }
 
 func String(this Sexpr) string {
 	return fmt.Sprintf("%+v", this)
+}
+
+func (this Quote) String() string {
+	return "'" + String(this.Value)
+}
+
+func (this Unquote) String() string {
+	return "," + String(this.Value)
+}
+
+func (this Nil) String() string {
+	return "nil"
+}
+
+func (this Bool) String() string {
+	if bool(this) {
+		return "t"
+	} else {
+		return "f"
+	}
+}
+
+func (this If) String() string {
+	return fmt.Sprintf("(if %+v %+v %+v)", this.Test, this.PosBranch, this.NegBranch)
+}
+
+func (this Define) String() string {
+	return fmt.Sprintf("(define %+v %+v)", this.Sym, this.Value)
+}
+
+func (this Set) String() string {
+	return fmt.Sprintf("(set! %+v %+v)", this.Sym, this.Value)
+}
+
+func (this Lambda) String() string {
+	return fmt.Sprintf("(lambda %+v %+v)", this.Args, this.Body)
 }

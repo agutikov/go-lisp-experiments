@@ -47,13 +47,34 @@ func Test_Sexpr(t *testing.T) {
 		{"'(,('()))", ast.Quote{ast.List{[]ast.Sexpr{
 			ast.Unquote{ast.List{[]ast.Sexpr{ast.Quote{ast.List{}}}}},
 		}}}},
+
+		{"(lambda (x) (- x))", ast.Lambda{
+			Args: ast.List{[]ast.Sexpr{ast.Symbol{"x"}}},
+			Body: ast.List{[]ast.Sexpr{ast.Symbol{"-"}, ast.Symbol{"x"}}},
+		}},
+
+		{"(if t f ())", ast.If{
+			Test:      ast.Bool(true),
+			PosBranch: ast.Bool(false),
+			NegBranch: ast.List{},
+		}},
+
+		{"(define foo 10)", ast.Define{
+			Sym:   ast.Symbol{"foo"},
+			Value: ast.Number{10},
+		}},
+
+		{"(set! foo 10)", ast.Set{
+			Sym:   ast.Symbol{"foo"},
+			Value: ast.Number{10},
+		}},
 	}
 
 	p := parser.NewParser()
 
 	for _, test := range tests {
 		expected := ast.Sequence{[]ast.Sexpr{test.output}}
-		//t.Logf("%q, expected: %#v", test.input, expected)
+		t.Logf("%q, expected: %#v", test.input, expected)
 
 		lex := lexer.NewLexer([]byte(test.input))
 		st, err := p.Parse(lex)
@@ -63,7 +84,7 @@ func Test_Sexpr(t *testing.T) {
 
 		s, ok := st.(ast.Sequence)
 
-		//t.Logf("    -> %#v", s)
+		t.Logf("    -> %#v", s)
 
 		if !ok {
 			t.Fatalf("This is not a Sequence")

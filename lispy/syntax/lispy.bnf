@@ -28,7 +28,6 @@ _escaped_char : '\\' . ;
 quoted_string : '"' {_escaped_char | .} '"' ;
 
 
-
 /*******************************************************************************/
 /* Syntax Part */
 
@@ -43,8 +42,12 @@ Sexpr : BareSexpr
       | UnquotedSexpr
       ;
 
-BareSexpr : Atom      << ast.NewSexpr($0) >>
-          | List      << ast.NewSexpr($0) >>
+BareSexpr : Atom
+          | List
+          | If
+          | Define
+          | Lambda
+          | Set
           ;
 
 QuotedSexpr : "'" BareSexpr      << ast.NewQuote($1) >>
@@ -58,11 +61,53 @@ List : "(" Sequence ")"  << ast.NewList($1) >>
      | "(" ")"           << ast.NewList(nil) >>
      ;
 
-Atom : atomic_symbol      << ast.NewSymbol($0) >>
-     | decimal_number     << ast.NewNumber($0) >>
-     | quoted_string      << ast.NewStr($0) >>
-     | "nil"              << ast.Nil{}, nil >>
+Atom : Symbol
+     | Number
+     | Str
+     | Nil
+     | Bool
      ;
+
+Bool : True | False
+     ;
+
+True : "t"  << ast.Bool(true), nil >> ;
+False : "f" << ast.Bool(false), nil >> ;
+
+Symbol : atomic_symbol      << ast.NewSymbol($0) >>
+       ;
+
+Number : decimal_number     << ast.NewNumber($0) >>
+       ;
+
+Str : quoted_string      << ast.NewStr($0) >>
+    ;
+
+Nil :  "nil"              << ast.Nil{}, nil >>
+    ;
+
+
+If : "(" "if" Sexpr Sexpr Sexpr ")"       << ast.NewIf($2, $3, $4) >>
+   ;
+
+Define : "(" "define" Symbol Sexpr ")"    << ast.NewDefine($2, $3) >>
+       ;
+
+Set : "(" "set!" Symbol Sexpr ")"    << ast.NewSet($2, $3) >>
+    ;
+
+Lambda : "(" "lambda" LambdaArgs Sexpr ")"      << ast.NewLambda($2, $3) >>
+       ;
+
+LambdaArgs : ListOfSymbols
+           ;
+
+ListOfSymbols : "(" SequenceOfSymbols ")"       << ast.NewList($1) >>
+              ;
+
+SequenceOfSymbols : Symbol                      << ast.NewSequence($0) >>
+                  | Symbol SequenceOfSymbols    << ast.Cons($0, $1) >>
+                  ;
 
 
 
