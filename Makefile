@@ -13,7 +13,7 @@ go-lispy: $(GO_LISPY_SRCS) | ${PKGS}
 	go build -o $@ $^
 
 go-lispy-debug: $(GO_LISPY_SRCS) | ${PKGS}
-	go build -gcflags "-N" -o $@ $^
+	go build -gcflags "-N -l" -o $@ $^
 
 .PHONY: run
 run:

@@ -46,8 +46,6 @@ func repl(env *lispy.Env) {
 		line = strings.TrimSpace(line)
 		if len(line) > 0 {
 			exec(env, line)
-		} else {
-			fmt.Println()
 		}
 	}
 }
@@ -56,8 +54,6 @@ func repl(env *lispy.Env) {
 
 func main() {
 	args := cmdlex.ParseCmdLineArgs(os.Args, 0)
-
-	fmt.Printf("%+v\n", args)
 
 	env := lispy.StdEnv()
 

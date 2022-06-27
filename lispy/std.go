@@ -413,6 +413,52 @@ func pow(args ...Any) Any {
 	return ast.FloatNum(math.Pow(b, e))
 }
 
+func fact(n *big.Int) *big.Int {
+	p := big.NewInt(1)
+	a := big.NewInt(1)
+	one := big.NewInt(1)
+
+	for a.Cmp(n) <= 0 {
+		p.Mul(p, a)
+		a.Add(a, one)
+	}
+
+	return p
+}
+
+func fact_r(n *big.Int) *big.Int {
+	var p *big.Int
+
+	if n.Sign() > 0 {
+		next := big.NewInt(-1)
+		next = next.Add(next, n)
+		p = fact_r(next)
+		return n.Mul(n, p)
+	} else {
+		return big.NewInt(1)
+	}
+}
+
+func __fact(args ...Any) Any {
+	arg := args[0]
+	switch n := arg.(type) {
+	case Int:
+		return Int{fact(n.Value)}
+	default:
+		panic("Invalid '__fact' argument: " + LispyStr(args))
+	}
+}
+
+func __fact_r(args ...Any) Any {
+	arg := args[0]
+	switch n := arg.(type) {
+	case Int:
+		return Int{fact_r(n.Value)}
+	default:
+		panic("Invalid '__fact' argument: " + LispyStr(args))
+	}
+}
+
 func StdEnv() *Env {
 	env := Env{}
 
@@ -446,6 +492,9 @@ func StdEnv() *Env {
 		"map":    lispy_map,
 
 		"pow": pow,
+
+		"__fact": __fact,
+		"__fact_r": __fact_r,
 	}
 
 	return &env
