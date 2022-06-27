@@ -23,6 +23,28 @@
 (count (quote the) (quote (the more the merrier the bigger the better)))
 ;4
 
+
+
+
+;(define fib (lambda (n) (if (< n 2) 1 (+ (fib (- n 1)) (fib (- n 2))))))
+(defun fib (n) (if (< n 2) 1 (+ (fib (- n 1)) (fib (- n 2)))))
+
+;(define range (lambda (a b) (if (= a b) (quote ()) (cons a (range (+ a 1) b)))))
+(defun range (a b) (if (= a b) (quote ()) (cons a (range (+ a 1) b))))
+
+(set! enable-print-elapsed t)
+(set! enable-trace t)
+
+(range 0 10)
+;(0 1 2 3 4 5 6 7 8 9)
+(map fib (range 0 10))
+;(1 1 2 3 5 8 13 21 34 55)
+(map fib (range 0 27))
+
+
+
+
+
 (define twice (lambda (x) (* 2 x)))
 (twice 5)
 ;10
@@ -42,11 +64,3 @@
 
 (pow 2 16)
 ;65536.0
-
-(define fib (lambda (n) (if (< n 2) 1 (+ (fib (- n 1)) (fib (- n 2))))))
-(define range (lambda (a b) (if (= a b) (quote ()) (cons a (range (+ a 1) b)))))
-(range 0 10)
-;(0 1 2 3 4 5 6 7 8 9)
-(map fib (range 0 10))
-;(1 1 2 3 5 8 13 21 34 55)
-(map fib (range 0 27))

@@ -70,6 +70,11 @@ type Lambda struct {
 	Body Any
 }
 
+type Defun struct {
+	Sym Symbol
+	L Lambda
+}
+
 func NewSymbol(t Attrib) (Symbol, error) {
 	name := string(t.(*token.Token).Lit)
 	return Symbol{name}, nil
@@ -178,6 +183,14 @@ func NewLambda(args Attrib, body Attrib) (Lambda, error) {
 		a = append(a, item.(Symbol))
 	}
 	return Lambda{Args: a, Body: body.(Any)}, nil
+}
+
+func NewDefun(sym Attrib, args Attrib, body Attrib) (Defun, error) {
+	a := []Symbol{}
+	for _, item := range args.(Sequence) {
+		a = append(a, item.(Symbol))
+	}
+	return Defun{Sym: sym.(Symbol), L: Lambda{Args: a, Body: body.(Any)}}, nil
 }
 
 func Map[From any, To any](f func(From) To, args []From) []To {

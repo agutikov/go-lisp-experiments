@@ -71,6 +71,14 @@ func Test_Sexpr(t *testing.T) {
 			Sym:   ast.Symbol{"foo"},
 			Value: ast.IntNum(10),
 		}},
+
+		{"(defun foo (arg) ())", ast.Defun{
+			Sym: ast.Symbol{"foo"},
+			L: ast.Lambda{
+				Args: []ast.Symbol{ast.Symbol{"arg"}},
+				Body: ast.List{},
+			},
+		}},
 	}
 
 	p := parser.NewParser()

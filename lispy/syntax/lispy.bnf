@@ -53,6 +53,7 @@ BareSexpr : Atom
           | Define
           | Lambda
           | Set
+          | Defun
           ;
 
 QuotedSexpr : "'" BareSexpr      << ast.NewQuote($1) >>
@@ -111,6 +112,9 @@ Set : "(" "set!" Symbol Sexpr ")"    << ast.NewSet($2, $3) >>
 
 Lambda : "(" "lambda" LambdaArgs Sexpr ")"      << ast.NewLambda($2, $3) >>
        ;
+
+Defun : "(" "defun" Symbol LambdaArgs Sexpr ")"  << ast.NewDefun($2, $3, $4) >>
+      ;
 
 LambdaArgs : ListOfSymbols
            ;

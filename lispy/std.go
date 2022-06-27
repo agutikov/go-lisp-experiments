@@ -433,7 +433,7 @@ func fact_r(n *big.Int) *big.Int {
 		next := big.NewInt(-1)
 		next = next.Add(next, n)
 		p = fact_r(next)
-		return n.Mul(n, p)
+		return p.Mul(p, n)
 	} else {
 		return big.NewInt(1)
 	}

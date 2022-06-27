@@ -1,22 +1,31 @@
 
 (define fact (lambda (n) (if (<= n 1) 1 (* n (fact (- n 1))))))
 
+(defun ffact (n) (if (<= n 1) 1 (* n (fact (- n 1)))))
+
+(defun cmp (x y) (if (= x y) "OK" "FALSE"))
+
+
+
 (set! enable-print-elapsed t)
 (set! enable-trace t)
 
 
-;(fact 10)
 
-(__fact 100)
-(__fact_r 100)
+(define X (__fact 100)) ; bultin, non-recursive
 
-(fact 100)
+(cmp X (__fact_r 100)) ; builtin, recursive
 
+(cmp X (fact 10)) ; check cmp itself
 
+(cmp X (fact 100)) ; define + lambda
 
-;(define run-go-fact (lambda (n) (< (__fact n) 0)))
-
-;(define run-fact (lambda (n) (< (fact n) 0)))
+(cmp X (ffact 100)) ; defun is faster than define + lambda if it is recursive
 
 
+
+
+
+
+()
 
