@@ -7,15 +7,14 @@ import (
 	"github.com/agutikov/go-lisp-experiments/lispy/syntax/ast"
 )
 
-
-func (env *Env) lambda_eval_if(expr ast.If) func(*Env)Any {
+func (env *Env) lambda_eval_if(expr ast.If) func(*Env) Any {
 	// Pre-eval test and all branches
 	test := env.lambda_eval_body(expr.Test)
 	pos_branch := env.lambda_eval_body(expr.PosBranch)
 	neg_branch := env.lambda_eval_body(expr.NegBranch)
 
 	// Return callable
-	return func (e *Env) Any {
+	return func(e *Env) Any {
 		if if_test(test(e)) {
 			return pos_branch(e)
 		} else {
@@ -24,37 +23,61 @@ func (env *Env) lambda_eval_if(expr ast.If) func(*Env)Any {
 	}
 }
 
-func (env *Env) lambda_eval_quote(q ast.Quote) func(*Env)Any {
-	//TODO: Unquote
-	return func(*Env) Any {
-		return q.Value
+func (env *Env) lambda_eval_quoted_expr(expr Any) func(*Env) Any {
+	switch v := expr.(type) {
+	case List:
+		return env.lambda_eval_quoted_list(v) //TODO: optimize
+	case ast.Unquote:
+		return env.lambda_eval_body(v.Value)
+	default:
+		return func(*Env) Any {
+			return v
+		}
 	}
 }
 
-func (env *Env) lambda_eval_define(d ast.Define) func(*Env)Any {
+func (env Env) lambda_eval_quoted_list(args List) func(*Env) Any {
+	f_lst := []func(*Env) Any{}
+	for _, item := range args {
+		f_lst = append(f_lst, env.lambda_eval_quoted_expr(item))
+	}
+	return func(env *Env) Any {
+		lst := List{}
+		for _, f_item := range f_lst {
+			lst = append(lst, f_item(env))
+		}
+		return lst
+	}
+}
+
+func (env *Env) lambda_eval_quote(q ast.Quote) func(*Env) Any {
+	return env.lambda_eval_quoted_expr(q.Value)
+}
+
+func (env *Env) lambda_eval_define(d ast.Define) func(*Env) Any {
 	//TODO
 	panic("define inside lambda body not implemented")
 }
 
-func (env *Env) lambda_eval_set(s ast.Set) func(*Env)Any {
+func (env *Env) lambda_eval_set(s ast.Set) func(*Env) Any {
 	//TODO
 	panic("set! inside lambda body not implemented")
 }
 
-func (env *Env) lambda_eval_lambda(lambda ast.Lambda) func(*Env)Any {
+func (env *Env) lambda_eval_lambda(lambda ast.Lambda) func(*Env) Any {
 	//TODO
 	panic("lambda inside lambda body not implemented")
 }
 
-func (env *Env) lambda_eval_defun(df ast.Defun) func(*Env)Any {
+func (env *Env) lambda_eval_defun(df ast.Defun) func(*Env) Any {
 	//TODO
 	panic("defun inside lambda body not implemented")
 }
 
 // Call a function inside lambda body
-func (env *Env) lambda_eval_list(lst List) func(*Env)Any {
+func (env *Env) lambda_eval_list(lst List) func(*Env) Any {
 	if len(lst) == 0 {
-		return func(*Env)Any {
+		return func(*Env) Any {
 			return lst
 		}
 	}
@@ -65,12 +88,12 @@ func (env *Env) lambda_eval_list(lst List) func(*Env)Any {
 	get_f := env.lambda_eval_body(head)
 
 	// pre-eval args
-	args_f := []func(*Env)Any{}
+	args_f := []func(*Env) Any{}
 	for _, elem := range tail {
 		args_f = append(args_f, env.lambda_eval_body(elem))
 	}
 
-	return func (e *Env) Any {
+	return func(e *Env) Any {
 		// get the function
 		f_value := get_f(e)
 		f := to_function(f_value)
@@ -86,7 +109,7 @@ func (env *Env) lambda_eval_list(lst List) func(*Env)Any {
 	}
 }
 
-func (env *Env) lambda_eval_symbol(sym Symbol) func(*Env)Any {
+func (env *Env) lambda_eval_symbol(sym Symbol) func(*Env) Any {
 	// Inside lambda body
 	value, ok := env.lambda_symbol_lookup(sym)
 	if ok {
@@ -94,19 +117,19 @@ func (env *Env) lambda_eval_symbol(sym Symbol) func(*Env)Any {
 		switch v := value.(type) {
 		case LambdaArg:
 			// If it is an argument use - return callable
-			return func (e *Env) Any {
+			return func(e *Env) Any {
 				// that takes the argument by index from args
 				return e.lambda_args[v.index]
 			}
 		default:
 			// If anything else - just cache a value
-			return func (*Env) Any {
+			return func(*Env) Any {
 				return value
 			}
 		}
 	}
 	// If symbol not defined yet - will lookup it when called
-	return func (e *Env) Any {
+	return func(e *Env) Any {
 		return e.symbol_lookup(sym)
 	}
 }
@@ -116,7 +139,7 @@ type LambdaArg struct {
 }
 
 // Pre-eval lambda body into function with single Env argument
-func (env *Env) lambda_eval_body(item Any) func(*Env)Any {
+func (env *Env) lambda_eval_body(item Any) func(*Env) Any {
 	switch v := item.(type) {
 	case List:
 		return env.lambda_eval_list(v)
@@ -139,17 +162,17 @@ func (env *Env) lambda_eval_body(item Any) func(*Env)Any {
 		return env.lambda_eval_symbol(v)
 	default:
 		// Other atoms are const literals
-		return func (*Env) Any {
+		return func(*Env) Any {
 			return v
 		}
 	}
 }
 
 type ForwardLambdaDefinition struct {
-	f func(...Any)Any
+	f func(...Any) Any
 }
 
-func (env *Env) eval_defun(df ast.Defun) func(...Any)Any {
+func (env *Env) eval_defun(df ast.Defun) func(...Any) Any {
 	// Temporary Env that we will use for body pre-eval
 	pre_eval_env := newEnv(env)
 
@@ -174,7 +197,7 @@ func (env *Env) eval_defun(df ast.Defun) func(...Any)Any {
 	return lambda
 }
 
-func (env *Env) eval_lambda(l ast.Lambda) func(...Any)Any {
+func (env *Env) eval_lambda(l ast.Lambda) func(...Any) Any {
 	// Env that is used during pre-eval of lambda body
 	pre_eval_env := newEnv(env)
 
@@ -197,7 +220,7 @@ func (env *Env) eval_lambda(l ast.Lambda) func(...Any)Any {
 	}
 }
 
-func (env *Env) __simple_old_eval_lambda(l ast.Lambda) Any {
+func (env *Env) __simple_unused_eval_lambda(l ast.Lambda) Any {
 	// Return callable which will
 	return func(args ...Any) Any {
 		// eval body in the new nested environment
@@ -206,7 +229,6 @@ func (env *Env) __simple_old_eval_lambda(l ast.Lambda) Any {
 		return e.eval_expr(l.Body)
 	}
 }
-
 
 func (env *Env) eval_if(expr ast.If) Any {
 	v := env.eval_expr(expr.Test)
@@ -234,10 +256,10 @@ func (env *Env) eval_set(s ast.Set) Any {
 	return value
 }
 
-func (env *Env) eval_quote_expr(q Any) Any {
-	switch v := q.(type) {
+func (env *Env) eval_quoted_expr(expr Any) Any {
+	switch v := expr.(type) {
 	case List:
-		return env.eval_quote_list(v)
+		return env.eval_quoted_list(v)
 	case ast.Unquote:
 		return env.eval_expr(v.Value)
 	default:
@@ -245,23 +267,16 @@ func (env *Env) eval_quote_expr(q Any) Any {
 	}
 }
 
-func (env Env) eval_quote_list(args List) Any {
+func (env Env) eval_quoted_list(args List) Any {
 	lst := List{}
 	for _, item := range args {
-		lst = append(lst, env.eval_quote_expr(item))
+		lst = append(lst, env.eval_quoted_expr(item))
 	}
 	return lst
 }
 
 func (env *Env) eval_quote(q ast.Quote) Any {
-	switch v := q.Value.(type) {
-	case List:
-		return env.eval_quote_list(v)
-	case ast.Unquote:
-		return env.eval_expr(v.Value)
-	default:
-		return v
-	}
+	return env.eval_quoted_expr(q.Value)
 }
 
 func (env *Env) eval_args(args ...ast.Any) []Any {

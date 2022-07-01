@@ -1,7 +1,8 @@
 
+(defun ffact (n) (if (<= n 1) 1 (* n (ffact (- n 1)))))
+
 (define fact (lambda (n) (if (<= n 1) 1 (* n (fact (- n 1))))))
 
-(defun ffact (n) (if (<= n 1) 1 (* n (fact (- n 1)))))
 
 (defun cmp (x y) (if (= x y) "OK" "FALSE"))
 

@@ -65,14 +65,16 @@ type Set struct {
 	Value Any
 }
 
+type LambdaArgs []Symbol
+
 type Lambda struct {
-	Args []Symbol
+	Args LambdaArgs
 	Body Any
 }
 
 type Defun struct {
 	Sym Symbol
-	L Lambda
+	L   Lambda
 }
 
 func NewSymbol(t Attrib) (Symbol, error) {
@@ -269,4 +271,12 @@ func (this Set) String() string {
 
 func (this Lambda) String() string {
 	return fmt.Sprintf("(lambda %+v %+v)", this.Args, this.Body)
+}
+
+func (this Defun) String() string {
+	return fmt.Sprintf("(defun %+v %+v %+v)", this.Sym, this.L.Args, this.L.Body)
+}
+
+func (this LambdaArgs) String() string {
+	return "(" + strings.Join(Map(func(a Symbol) string { return String(a) }, this), " ") + ")"
 }
