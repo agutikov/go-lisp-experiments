@@ -427,16 +427,19 @@ func fact(n *big.Int) *big.Int {
 }
 
 func fact_r(n *big.Int) *big.Int {
-	var p *big.Int
+	p := big.NewInt(1)
 
-	if n.Sign() > 0 {
-		next := big.NewInt(-1)
-		next = next.Add(next, n)
-		p = fact_r(next)
-		return p.Mul(p, n)
-	} else {
-		return big.NewInt(1)
+	if n.Sign() <= 0 {
+		return p
 	}
+
+	next := big.NewInt(-1)
+	next = next.Add(next, n)
+	p.Set(n)
+	f := fact_r(next)
+	p.Mul(p, f)
+
+	return p
 }
 
 func __fact(args ...Any) Any {
@@ -493,7 +496,7 @@ func StdEnv() *Env {
 
 		"pow": pow,
 
-		"__fact": __fact,
+		"__fact":   __fact,
 		"__fact_r": __fact_r,
 	}
 

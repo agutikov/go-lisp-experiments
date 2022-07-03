@@ -86,6 +86,8 @@ func (env *Env) lambda_eval_list(lst List) func(*Env) Any {
 
 	// pre-eval car into callable that will return function
 	get_f := env.lambda_eval_body(head)
+	//f_value := env.eval_expr(head)
+	//f := to_function(f_value)
 
 	// pre-eval args
 	args_f := []func(*Env) Any{}
@@ -168,7 +170,7 @@ func (env *Env) lambda_eval_body(item Any) func(*Env) Any {
 	}
 }
 
-type ForwardLambdaDefinition struct {
+type LambdaPlaceholder struct {
 	f func(...Any) Any
 }
 
@@ -177,7 +179,7 @@ func (env *Env) eval_defun(df ast.Defun) func(...Any) Any {
 	pre_eval_env := newEnv(env)
 
 	// Placeholder for function instance that will appear after function body pre-eval
-	fwd := ForwardLambdaDefinition{}
+	fwd := LambdaPlaceholder{}
 
 	// Put the placeholder into the temporary env - to allow recursive function find it's name
 	pre_eval_env.named_objects[df.Sym.Name] = func(args ...Any) Any {
@@ -220,7 +222,7 @@ func (env *Env) eval_lambda(l ast.Lambda) func(...Any) Any {
 	}
 }
 
-func (env *Env) __simple_unused_eval_lambda(l ast.Lambda) Any {
+func (env *Env) eval_simple_lambda(l ast.SimpleLambda) Any {
 	// Return callable which will
 	return func(args ...Any) Any {
 		// eval body in the new nested environment
@@ -348,6 +350,8 @@ func (env *Env) _eval_expr(expr Any) Any {
 		return env.eval_if(v)
 	case ast.Set:
 		return env.eval_set(v)
+	case ast.SimpleLambda:
+		return env.eval_simple_lambda(v)
 	case ast.Lambda:
 		return env.eval_lambda(v)
 	case ast.Defun:

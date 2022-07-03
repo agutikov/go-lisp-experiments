@@ -72,6 +72,11 @@ type Lambda struct {
 	Body Any
 }
 
+type SimpleLambda struct {
+	Args LambdaArgs
+	Body Any
+}
+
 type Defun struct {
 	Sym Symbol
 	L   Lambda
@@ -187,6 +192,14 @@ func NewLambda(args Attrib, body Attrib) (Lambda, error) {
 	return Lambda{Args: a, Body: body.(Any)}, nil
 }
 
+func NewSimpleLambda(args Attrib, body Attrib) (SimpleLambda, error) {
+	a := []Symbol{}
+	for _, item := range args.(Sequence) {
+		a = append(a, item.(Symbol))
+	}
+	return SimpleLambda{Args: a, Body: body.(Any)}, nil
+}
+
 func NewDefun(sym Attrib, args Attrib, body Attrib) (Defun, error) {
 	a := []Symbol{}
 	for _, item := range args.(Sequence) {
@@ -271,6 +284,10 @@ func (this Set) String() string {
 
 func (this Lambda) String() string {
 	return fmt.Sprintf("(lambda %+v %+v)", this.Args, this.Body)
+}
+
+func (this SimpleLambda) String() string {
+	return fmt.Sprintf("(slambda %+v %+v)", this.Args, this.Body)
 }
 
 func (this Defun) String() string {

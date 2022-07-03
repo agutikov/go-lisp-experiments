@@ -113,6 +113,9 @@ Set : "(" "set!" Symbol Sexpr ")"    << ast.NewSet($2, $3) >>
 Lambda : "(" "lambda" LambdaArgs Sexpr ")"      << ast.NewLambda($2, $3) >>
        ;
 
+Lambda : "(" "slambda" LambdaArgs Sexpr ")"      << ast.NewSimpleLambda($2, $3) >>
+       ;
+
 Defun : "(" "defun" Symbol LambdaArgs Sexpr ")"  << ast.NewDefun($2, $3, $4) >>
       ;
 
