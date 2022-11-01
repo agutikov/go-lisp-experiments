@@ -94,7 +94,7 @@ func main() {
 
 ```Go
 // Get an executable from lambda expression
-fact := lispy.Lambda("(define fact (lambda (n) (if (<= n 1) 1 (* n (fact (- n 1))))))")
+fact := lispy.Function("(define fact (lambda (n) (if (<= n 1) 1 (* n (fact (- n 1))))))")
 
 // Call the function
 // NOTE: if go-lispy interpreter interacts with values - then lispy types should be used
@@ -102,7 +102,7 @@ v := fact(lispy.FromInt(100))
 fmt.Println(LispyStr(v))
 
 // If go-lispy interpreter will not interact with values - then any types could be used
-zip2 := lispy.Lambda("(lambda (slice_1 slice_2) (map list slice_1 slice_2))")
+zip2 := lispy.Function("(lambda (slice_1 slice_2) (map list slice_1 slice_2))")
 a := lispy.List{0, 1, 2}
 b := lispy.List{"str", true}
 r := zip2(a, b)

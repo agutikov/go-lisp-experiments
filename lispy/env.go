@@ -6,8 +6,22 @@ import (
 	"github.com/agutikov/go-lisp-experiments/lispy/syntax/ast"
 )
 
-type LambdaArg struct {
-	index int
+type LambdaPreEvalContext struct {
+	env               *Env
+	arg_name_to_index map[string]int
+}
+
+type LambdaCallContext struct {
+	args []Any
+}
+
+func newLambdaPreEvalContext(e *Env, args ast.LambdaArgs) *LambdaPreEvalContext {
+	name_to_index := map[string]int{}
+	for i, sym := range args {
+		name_to_index[sym.Name] = i
+	}
+	c := LambdaPreEvalContext{env: e, arg_name_to_index: name_to_index}
+	return &c
 }
 
 type Env struct {
@@ -39,12 +53,6 @@ func (env *Env) assign_vars(vars []ast.Symbol, values ...Any) {
 	}
 }
 
-func (env *Env) define_lambda_args(symbols []ast.Symbol) {
-	for i, sym := range symbols {
-		env.named_objects[sym.Name] = LambdaArg{index: i}
-	}
-}
-
 func (env *Env) symbol_lookup(s Symbol) Any {
 	if val, ok := env.named_objects[s.Name]; ok {
 		return val
@@ -54,17 +62,6 @@ func (env *Env) symbol_lookup(s Symbol) Any {
 		//TODO: panic or return nil or error?
 		panic("Undefined symbol: \"" + s.Name + "\"")
 	}
-}
-
-func (env *Env) lambda_symbol_lookup(s Symbol) (Any, bool) {
-	val, ok := env.named_objects[s.Name]
-	if ok {
-		return val, true
-	}
-	if env.parent != nil {
-		return env.parent.lambda_symbol_lookup(s)
-	}
-	return nil, false
 }
 
 func (env *Env) env_lookup(s string) *Env {

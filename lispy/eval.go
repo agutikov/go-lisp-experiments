@@ -37,17 +37,16 @@ func (env *Env) eval_defun(df ast.Defun) func(...Any) Any {
 }
 
 func (env *Env) eval_lambda(l ast.Lambda) func(...Any) Any {
-	// Env that is used during pre-eval of lambda body
-	pre_eval_env := newEnv(env)
-
-	// Put LambdaArg objects into the temporary env
-	pre_eval_env.define_lambda_args(l.Args)
+	pre_eval_ctx := newLambdaPreEvalContext(env, l.Args)
 
 	// pre-eval lambda body in the temporary env
-	body_f := pre_eval_env.lambda_eval_body(l.Body)
+	body_f := pre_eval_ctx.lambda_eval_body(l.Body)
 
 	// Return callable that
-	return body_f
+	return func(args ...Any) Any {
+		ctx := LambdaCallContext{args: args}
+		return body_f(&ctx)
+	}
 }
 
 func (env *Env) eval_simple_lambda(l ast.SimpleLambda) Any {
@@ -210,6 +209,6 @@ func (env *Env) Eval(seq ast.Sequence) Any {
 	return r
 }
 
-func Lambda(s string) PureFunction {
+func Function(s string) PureFunction {
 	return to_function(StdEnv().eval_expr(ParseStr(s)))
 }
