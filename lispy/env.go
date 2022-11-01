@@ -6,6 +6,10 @@ import (
 	"github.com/agutikov/go-lisp-experiments/lispy/syntax/ast"
 )
 
+type LambdaArg struct {
+	index int
+}
+
 type Env struct {
 	parent        *Env
 	named_objects map[string]Any
