@@ -40,12 +40,17 @@ func (env *Env) eval_lambda(l ast.Lambda) func([]Any) Any {
 	pre_eval_ctx := newLambdaPreEvalContext(env, l.Args)
 
 	// pre-eval lambda body in the temporary env
-	body_f := pre_eval_ctx.lambda_eval_body(l.Body)
+	r := pre_eval_ctx.lambda_eval_body(l.Body)
 
-	// Return callable that
-	return func(args []Any) Any {
-		ctx := LambdaCallContext{args: args}
-		return body_f(&ctx)
+	if r.is_constant {
+		return func([]Any) Any {
+			return r.value
+		}
+	} else {
+		return func(args []Any) Any {
+			ctx := LambdaCallContext{args: args}
+			return r.function(&ctx)
+		}
 	}
 }
 
