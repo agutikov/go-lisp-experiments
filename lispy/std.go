@@ -149,6 +149,10 @@ func minus(arg Any) Any {
 	}
 }
 
+func sub1(args []Any) Any {
+	return minus(args[0])
+}
+
 func sub(args []Any) Any {
 	if len(args) == 1 {
 		return minus(args[0])
@@ -166,6 +170,18 @@ func sub(args []Any) Any {
 		},
 		args,
 	)
+}
+
+func sub2(args []Any) Any {
+	r := Int{big.NewInt(0)}
+	r.Value = r.Value.Sub(to_int(args[0]).Value, to_int(args[1]).Value)
+	return r
+}
+
+func prod2(args []Any) Any {
+	r := Int{big.NewInt(1)}
+	r.Value = r.Value.Mul(to_int(args[0]).Value, to_int(args[1]).Value)
+	return r
 }
 
 func prod(args []Any) Any {
@@ -427,19 +443,20 @@ func fact(n *big.Int) *big.Int {
 }
 
 func fact_r(n *big.Int) *big.Int {
-	p := big.NewInt(1)
-
 	if n.Sign() <= 0 {
-		return p
+		return big.NewInt(1)
 	}
 
-	next := big.NewInt(-1)
-	next = next.Add(next, n)
-	p.Set(n)
-	f := fact_r(next)
-	p.Mul(p, f)
+	one := big.NewInt(1)
+	next := big.NewInt(0)
+	next = next.Sub(n, one)
 
-	return p
+	f := fact_r(next)
+
+	prod := big.NewInt(1)
+	prod = prod.Mul(f, n)
+
+	return prod
 }
 
 func __fact(args []Any) Any {

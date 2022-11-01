@@ -4,7 +4,7 @@ all: go-lispy
 
 GO_LISPY_SRCS := lispy_main.go
 
-BINARIES := go-lispy go-lispy-debug
+BINARIES := go-lispy go-lispy-debug fact-bench
 
 PKGS := lispy cmdlex
 
@@ -14,6 +14,10 @@ go-lispy: $(GO_LISPY_SRCS) | ${PKGS}
 
 go-lispy-debug: $(GO_LISPY_SRCS) | ${PKGS}
 	go build -gcflags "-N -l" -o $@ $^
+
+fact-bench: fact_bench.go | ${PKGS}
+	go build -o $@ $^
+
 
 .PHONY: run
 run:

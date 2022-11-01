@@ -43,6 +43,15 @@ func to_list(s Any) List {
 	}
 }
 
+func to_int(s Any) Int {
+	switch v := s.(type) {
+	case Int:
+		return v
+	default:
+		panic("Invalid int: " + LispyStr(s))
+	}
+}
+
 func to_function(s Any) PureFunction {
 	switch v := s.(type) {
 	case PureFunction:
