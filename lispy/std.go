@@ -7,15 +7,15 @@ import (
 	"github.com/agutikov/go-lisp-experiments/lispy/syntax/ast"
 )
 
-func car(arg ...Any) Any {
+func car(arg []Any) Any {
 	return to_list(arg[0])[0]
 }
 
-func cdr(args ...Any) Any {
+func cdr(args []Any) Any {
 	return to_list(args[0])[1:]
 }
 
-func cons(args ...Any) Any {
+func cons(args []Any) Any {
 	if len(args) != 2 {
 		panic("'cons' function requires exactly 2 arguments (const head exp), while provided: " + LispyStr(args))
 	}
@@ -24,15 +24,15 @@ func cons(args ...Any) Any {
 	if !is_nil(args[1]) {
 		tail = to_list(args[1])
 	}
-	r = append(List{args[0]}, tail...)
+	r = append(List{args[0]}, tail)
 	return r
 }
 
-func list(args ...Any) Any {
-	return append(List{}, args...)
+func list(args []Any) Any {
+	return append(List{}, args)
 }
 
-func fold_bools(f func(bool, bool) bool, init bool, args ...Any) Bool {
+func fold_bools(f func(bool, bool) bool, init bool, args []Any) Bool {
 	acc := init
 
 	for _, item := range args {
@@ -50,7 +50,7 @@ func bool_to_int(b Bool) Int {
 	}
 }
 
-func fold_nums(name string, f_i func(Int, Int) Int, f_f func(Float, Float) Float, init Any, args ...Any) Any {
+func fold_nums(name string, f_i func(Int, Int) Int, f_f func(Float, Float) Float, init Any, args []Any) Any {
 	var acc Any
 	acc = init
 	//TODO: type switch for multiple args
@@ -86,7 +86,7 @@ func fold_nums(name string, f_i func(Int, Int) Int, f_f func(Float, Float) Float
 	return acc
 }
 
-func numeric_2_args(name string, f_i func(Int, Int) Int, f_f func(Float, Float) Float, args ...Any) Any {
+func numeric_2_args(name string, f_i func(Int, Int) Int, f_f func(Float, Float) Float, args []Any) Any {
 	if len(args) != 2 {
 		panic("'" + name + "' requires exactly 2 arguments, provided: " + LispyStr(args))
 	}
@@ -120,7 +120,7 @@ func numeric_2_args(name string, f_i func(Int, Int) Int, f_f func(Float, Float) 
 
 //TODO: Number type that holds the big.Int or big.Rat or anything else and converts it if necessary
 
-func sum(args ...Any) Any {
+func sum(args []Any) Any {
 	return fold_nums("+",
 		func(a Int, b Int) Int {
 			r := Int{big.NewInt(0)}
@@ -132,7 +132,7 @@ func sum(args ...Any) Any {
 			r.Value = r.Value.Add(a.Value, b.Value)
 			return r
 		},
-		Int{big.NewInt(0)}, args...,
+		Int{big.NewInt(0)}, args,
 	)
 }
 
@@ -149,7 +149,7 @@ func minus(arg Any) Any {
 	}
 }
 
-func sub(args ...Any) Any {
+func sub(args []Any) Any {
 	if len(args) == 1 {
 		return minus(args[0])
 	}
@@ -164,11 +164,11 @@ func sub(args ...Any) Any {
 			r.Value = r.Value.Sub(a.Value, b.Value)
 			return r
 		},
-		args...,
+		args,
 	)
 }
 
-func prod(args ...Any) Any {
+func prod(args []Any) Any {
 	return fold_nums("*",
 		func(a Int, b Int) Int {
 			r := Int{big.NewInt(0)}
@@ -180,22 +180,22 @@ func prod(args ...Any) Any {
 			r.Value = r.Value.Mul(a.Value, b.Value)
 			return r
 		},
-		Int{big.NewInt(1)}, args...,
+		Int{big.NewInt(1)}, args,
 	)
 }
 
-func div(args ...Any) Any {
+func div(args []Any) Any {
 	return numeric_2_floats("/",
 		func(a Float, b Float) Any {
 			r := ast.FloatNum(0)
 			r.Value = r.Value.Quo(a.Value, b.Value)
 			return r
 		},
-		args...,
+		args,
 	)
 }
 
-func numeric_2_floats(name string, f func(Float, Float) Any, args ...Any) Any {
+func numeric_2_floats(name string, f func(Float, Float) Any, args []Any) Any {
 	if len(args) != 2 {
 		panic("'" + name + "' requires exactly 2 arguments, provided: " + LispyStr(args))
 	}
@@ -227,20 +227,20 @@ func numeric_2_floats(name string, f func(Float, Float) Any, args ...Any) Any {
 	}
 }
 
-func gt(args ...Any) Any {
-	return numeric_2_floats(">", func(a Float, b Float) Any { return Bool(a.Value.Cmp(b.Value) > 0) }, args...)
+func gt(args []Any) Any {
+	return numeric_2_floats(">", func(a Float, b Float) Any { return Bool(a.Value.Cmp(b.Value) > 0) }, args)
 }
 
-func lt(args ...Any) Any {
-	return numeric_2_floats(">", func(a Float, b Float) Any { return Bool(a.Value.Cmp(b.Value) < 0) }, args...)
+func lt(args []Any) Any {
+	return numeric_2_floats(">", func(a Float, b Float) Any { return Bool(a.Value.Cmp(b.Value) < 0) }, args)
 }
 
-func ge(args ...Any) Any {
-	return numeric_2_floats(">", func(a Float, b Float) Any { return Bool(a.Value.Cmp(b.Value) >= 0) }, args...)
+func ge(args []Any) Any {
+	return numeric_2_floats(">", func(a Float, b Float) Any { return Bool(a.Value.Cmp(b.Value) >= 0) }, args)
 }
 
-func le(args ...Any) Any {
-	return numeric_2_floats(">", func(a Float, b Float) Any { return Bool(a.Value.Cmp(b.Value) <= 0) }, args...)
+func le(args []Any) Any {
+	return numeric_2_floats(">", func(a Float, b Float) Any { return Bool(a.Value.Cmp(b.Value) <= 0) }, args)
 }
 
 func list_cmp(a List, b List) Bool {
@@ -285,7 +285,7 @@ func equal(a Any, b Any) Bool {
 	}
 }
 
-func eq(args ...Any) Any {
+func eq(args []Any) Any {
 	if len(args) != 2 {
 		panic("equality requires exactly 2 arguments, provided: " + LispyStr(args))
 	}
@@ -293,8 +293,8 @@ func eq(args ...Any) Any {
 	return equal(args[0], args[1])
 }
 
-//TODO: package constraints is not in GOROOT
-//func max[T constraints.Ordered](a T, b T) T {
+// TODO: package constraints is not in GOROOT
+// func max[T constraints.Ordered](a T, b T) T {
 func max(a int, b int) int {
 	if b < a {
 		return a
@@ -330,7 +330,7 @@ func zip(v []Any) [][]Any {
 	return r
 }
 
-func lispy_map(args ...Any) Any {
+func lispy_map(args []Any) Any {
 	if len(args) < 2 {
 		return nil
 	}
@@ -339,12 +339,12 @@ func lispy_map(args ...Any) Any {
 
 	r := List{}
 	for _, item := range a {
-		r = append(r, f(item...))
+		r = append(r, f(item))
 	}
 	return r
 }
 
-//TODO: flatten l1 unwraps only upper level of lists
+// TODO: flatten l1 unwraps only upper level of lists
 func flatten_l1(args List) List {
 	r := List{}
 
@@ -362,13 +362,13 @@ func flatten_l1(args List) List {
 	return r
 }
 
-func apply(args ...Any) Any {
+func apply(args []Any) Any {
 	if len(args) < 2 {
 		return nil
 	}
 	f := to_function(args[0])
 	a := flatten_l1(args[1:])
-	return f(a...)
+	return f(a)
 }
 
 func to_float(n Any) Float {
@@ -399,7 +399,7 @@ func Pow(a *big.Rat, e uint64) *big.Rat {
 	return result
 }
 
-func pow(args ...Any) Any {
+func pow(args []Any) Any {
 	if len(args) != 2 {
 		panic("'pow' requires exactly 2 arguments, provided: " + LispyStr(args))
 	}
@@ -442,7 +442,7 @@ func fact_r(n *big.Int) *big.Int {
 	return p
 }
 
-func __fact(args ...Any) Any {
+func __fact(args []Any) Any {
 	arg := args[0]
 	switch n := arg.(type) {
 	case Int:
@@ -452,7 +452,7 @@ func __fact(args ...Any) Any {
 	}
 }
 
-func __fact_r(args ...Any) Any {
+func __fact_r(args []Any) Any {
 	arg := args[0]
 	switch n := arg.(type) {
 	case Int:
@@ -483,14 +483,14 @@ func StdEnv() *Env {
 		"<=":   le,
 		"=":    eq,
 		//TODO: common way to check the number of args and the types
-		"begin":  func(args ...Any) Any { return args[len(args)-1] },
+		"begin":  func(args []Any) Any { return args[len(args)-1] },
 		"pi":     ast.FloatNum(math.Pi),
-		"eq?":    func(args ...Any) Any { return Bool(args[0] == args[1]) },
+		"eq?":    func(args []Any) Any { return Bool(args[0] == args[1]) },
 		"equal?": eq,
-		"length": func(args ...Any) Any { return Int{big.NewInt(int64(len(to_list(args[0]))))} },
-		"not":    func(args ...Any) Any { return Bool(!if_test(args[0])) },
-		"and":    func(args ...Any) Any { return fold_bools(func(x bool, y bool) bool { return x && y }, true, args...) },
-		"or":     func(args ...Any) Any { return fold_bools(func(x bool, y bool) bool { return x || y }, false, args...) },
+		"length": func(args []Any) Any { return Int{big.NewInt(int64(len(to_list(args[0]))))} },
+		"not":    func(args []Any) Any { return Bool(!if_test(args[0])) },
+		"and":    func(args []Any) Any { return fold_bools(func(x bool, y bool) bool { return x && y }, true, args) },
+		"or":     func(args []Any) Any { return fold_bools(func(x bool, y bool) bool { return x || y }, false, args) },
 		"apply":  apply,
 		"map":    lispy_map,
 

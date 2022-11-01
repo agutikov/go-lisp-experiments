@@ -17,7 +17,7 @@ type Any = ast.Any
 type List = ast.List
 type NIl = ast.Nil
 
-type PureFunction = func(...Any) Any
+type PureFunction = func([]Any) Any
 
 func int_to_float(v Int) Float {
 	r := new(big.Rat)

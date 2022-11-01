@@ -8,10 +8,10 @@ import (
 )
 
 type LambdaPlaceholder struct {
-	f func(...Any) Any
+	f func([]Any) Any
 }
 
-func (env *Env) eval_defun(df ast.Defun) func(...Any) Any {
+func (env *Env) eval_defun(df ast.Defun) func([]Any) Any {
 	// Temporary Env that we will use for body pre-eval
 	pre_eval_env := newEnv(env)
 
@@ -19,8 +19,8 @@ func (env *Env) eval_defun(df ast.Defun) func(...Any) Any {
 	fwd := LambdaPlaceholder{}
 
 	// Put the placeholder into the temporary env - to allow recursive function find it's name
-	pre_eval_env.named_objects[df.Sym.Name] = func(args ...Any) Any {
-		return fwd.f(args...)
+	pre_eval_env.named_objects[df.Sym.Name] = func(args []Any) Any {
+		return fwd.f(args)
 	}
 
 	// Eval the lambda in the temporary env
@@ -36,14 +36,14 @@ func (env *Env) eval_defun(df ast.Defun) func(...Any) Any {
 	return lambda
 }
 
-func (env *Env) eval_lambda(l ast.Lambda) func(...Any) Any {
+func (env *Env) eval_lambda(l ast.Lambda) func([]Any) Any {
 	pre_eval_ctx := newLambdaPreEvalContext(env, l.Args)
 
 	// pre-eval lambda body in the temporary env
 	body_f := pre_eval_ctx.lambda_eval_body(l.Body)
 
 	// Return callable that
-	return func(args ...Any) Any {
+	return func(args []Any) Any {
 		ctx := LambdaCallContext{args: args}
 		return body_f(&ctx)
 	}
@@ -51,10 +51,10 @@ func (env *Env) eval_lambda(l ast.Lambda) func(...Any) Any {
 
 func (env *Env) eval_simple_lambda(l ast.SimpleLambda) Any {
 	// Return callable which will
-	return func(args ...Any) Any {
+	return func(args []Any) Any {
 		// eval body in the new nested environment
 		e := newEnv(env)
-		e.assign_vars(l.Args, args...)
+		e.assign_vars(l.Args, args)
 		return e.eval_expr(l.Body)
 	}
 }
@@ -108,7 +108,7 @@ func (env *Env) eval_quote(q ast.Quote) Any {
 	return env.eval_quoted_expr(q.Value)
 }
 
-func (env *Env) eval_args(args ...ast.Any) []Any {
+func (env *Env) eval_args(args []ast.Any) []Any {
 	r := []Any{}
 	for _, elem := range args {
 		r = append(r, env.eval_expr(elem))
@@ -128,10 +128,10 @@ func (env *Env) eval_list(lst List) Any {
 	f := to_function(f_value)
 
 	// eval args
-	args := env.eval_args(tail...)
+	args := env.eval_args(tail)
 
 	// call function with args
-	return f(args...)
+	return f(args)
 }
 
 func quote_if_list(value Any) Any {

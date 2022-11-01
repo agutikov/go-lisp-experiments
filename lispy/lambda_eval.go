@@ -71,7 +71,7 @@ func (env *LambdaPreEvalContext) lambda_eval_defun(df ast.Defun) func(*LambdaCal
 	panic("defun inside lambda body not implemented")
 }
 
-func (env *LambdaPreEvalContext) lambda_eval_args(args ...ast.Any) []func(*LambdaCallContext) Any {
+func (env *LambdaPreEvalContext) lambda_eval_args(args []ast.Any) []func(*LambdaCallContext) Any {
 	r := []func(*LambdaCallContext) Any{}
 	for _, elem := range args {
 		r = append(r, env.lambda_eval_body(elem))
@@ -93,7 +93,7 @@ func (env *LambdaPreEvalContext) lambda_eval_list(lst List) func(*LambdaCallCont
 	get_f := env.lambda_eval_body(head)
 
 	// pre-eval args
-	args_f := env.lambda_eval_args(tail...)
+	args_f := env.lambda_eval_args(tail)
 
 	return func(ctx *LambdaCallContext) Any {
 		// get the function
@@ -107,7 +107,7 @@ func (env *LambdaPreEvalContext) lambda_eval_list(lst List) func(*LambdaCallCont
 		}
 
 		// Call the function
-		return f(values...)
+		return f(values)
 	}
 }
 

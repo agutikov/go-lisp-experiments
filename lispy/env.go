@@ -43,7 +43,7 @@ func newEnv(parent *Env) *Env {
 	return &e
 }
 
-func (env *Env) assign_vars(vars []ast.Symbol, values ...Any) {
+func (env *Env) assign_vars(vars []ast.Symbol, values []Any) {
 	if len(vars) != len(values) {
 		panic("Invalid number of values provided")
 	}
