@@ -47,16 +47,7 @@ func (env *Env) eval_lambda(l ast.Lambda) func(...Any) Any {
 	body_f := pre_eval_env.lambda_eval_body(l.Body)
 
 	// Return callable that
-	return func(args ...Any) Any {
-		// Creates env to run the function in - like a call frame
-		e := newEnv(env)
-
-		// Put args into the "call frame"
-		e.lambda_args = args
-
-		// Call a pre-evaluated lambda
-		return body_f(e)
-	}
+	return body_f
 }
 
 func (env *Env) eval_simple_lambda(l ast.SimpleLambda) Any {

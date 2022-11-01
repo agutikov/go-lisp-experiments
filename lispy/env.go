@@ -13,9 +13,6 @@ type LambdaArg struct {
 type Env struct {
 	parent        *Env
 	named_objects map[string]Any
-
-	// Lambda-specific values
-	lambda_args List
 }
 
 func (env *Env) Print() Any {
